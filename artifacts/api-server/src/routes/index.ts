@@ -7,6 +7,7 @@ import bannersRouter from "./banners";
 import blackoutDatesRouter from "./blackout-dates";
 import couponsRouter from "./coupons";
 import adminRouter from "./admin";
+import settingsRouter from "./settings";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(bannersRouter);
 router.use(blackoutDatesRouter);
 router.use(couponsRouter);
 router.use(adminRouter);
+router.use(settingsRouter);
 
 export default router;
