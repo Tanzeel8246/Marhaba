@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListOrders, useUpdateOrderStatus, useGetAdminMe, getListOrdersQueryKey } from "@workspace/api-client-react";
+import { useListOrders, useUpdateOrderStatus, useGetAdminMe, getListOrdersQueryKey, OrderStatus } from "@workspace/api-client-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +43,7 @@ export default function AdminOrdersPage() {
     if (!loadingSession && !session?.authenticated) navigate("/admin/login");
   }, [session, loadingSession]);
 
-  const params = statusFilter !== "all" ? { status: statusFilter } : {};
+  const params = statusFilter !== "all" ? { status: statusFilter as OrderStatus } : {};
   const { data: orders, isLoading } = useListOrders(params, {
     query: { queryKey: getListOrdersQueryKey(params) },
   });
