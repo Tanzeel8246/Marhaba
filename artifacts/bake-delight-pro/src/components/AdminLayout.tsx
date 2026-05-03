@@ -64,7 +64,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           variant="ghost"
           size="sm"
           className="flex-1 justify-start gap-2 text-muted-foreground"
-          onClick={() => logout.mutate({})}
+          onClick={() => logout.mutate()}
         >
           <LogOut className="h-4 w-4" /> Logout
         </Button>
