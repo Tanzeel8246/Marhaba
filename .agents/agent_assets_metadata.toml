@@ -1,0 +1,32 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "ucYFrrYAsAL0uReUIGGyF"
+uri = "file://artifacts/bake-delight-pro/public/placeholder-cake-1.png"
+type = "image"
+title = "Chocolate Fudge Cake"
+
+[[generated]]
+id = "TeVZ9MEJrZR2nAYCpY1Dc"
+uri = "file://artifacts/bake-delight-pro/public/placeholder-bread-1.png"
+type = "image"
+title = "Artisan Sourdough Loaf"
+
+[[generated]]
+id = "4cloCotwqiuFCrURz8Fiy"
+uri = "file://artifacts/bake-delight-pro/public/placeholder-macarons-1.png"
+type = "image"
+title = "Assorted Macarons"
+
+[[generated]]
+id = "F5OmD8a8NebhglSOyO8eK"
+uri = "file://artifacts/bake-delight-pro/public/placeholder-croissant-1.png"
+type = "image"
+title = "Fresh Croissants"
+
+[[generated]]
+id = "2KnGuz-A_mnfbDbDNs5yh"
+uri = "file://artifacts/bake-delight-pro/public/hero-banner-1.png"
+type = "image"
+title = "Hero Banner Bakery"

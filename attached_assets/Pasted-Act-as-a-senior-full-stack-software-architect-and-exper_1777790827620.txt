@@ -1,0 +1,172 @@
+Act as a senior full-stack software architect and expert developer.
+
+I want you to build a production-grade, scalable bakery e-commerce web application named **Bake Delight Pro** for a home-based bakery business.
+
+IMPORTANT DEVELOPMENT RULES:
+
+1. You must work PHASE BY PHASE.
+2. Complete ONLY ONE PHASE at a time.
+3. After completing a phase, STOP and ask for my approval before moving to the next phase.
+4. Do NOT continue automatically.
+5. Do NOT modify unrelated files.
+6. After each phase, explain:
+
+   * What you implemented
+   * Which files were created/updated
+   * How to test it
+7. Follow clean, modular, scalable architecture.
+8. Use modern best practices and production-ready code.
+9. Maintain consistent design system and reusable components.
+10. Optimize for mobile-first responsive design.
+
+TECH STACK (MANDATORY):
+
+* Next.js 15 (App Router)
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+* Supabase (Database/Auth/Storage)
+* React Hook Form + Zod
+* Zustand for state management
+* Use server actions / API routes where appropriate
+
+PROJECT OVERVIEW:
+This is an advanced bakery ordering platform for a home baker who sells cakes, cookies, pastries, etc.
+
+CORE REQUIRED FEATURES:
+
+1. Admin/Vendor Portal:
+
+   * Secure login
+   * Dashboard analytics
+   * Manage categories
+   * Manage products
+   * Upload product images
+   * Product visibility toggle
+   * Inventory/availability toggle
+   * Manage homepage banners
+   * View/manage orders
+
+2. Customer Storefront:
+
+   * Beautiful modern homepage
+   * Product listing/grid
+   * Category filters
+   * Search functionality
+   * Product detail page
+   * Related products
+   * Mobile optimized UI
+
+3. Advanced Product Configuration:
+
+   * Variants (size/flavor/frosting)
+   * Add-ons
+   * Personalized cake message
+   * Dynamic pricing updates
+
+4. Delivery Scheduling System:
+
+   * Customer selects delivery date/time
+   * Must enforce minimum 24-hour lead time
+   * Disable invalid dates/times
+   * Bakery blackout dates support
+   * Daily order limit support
+
+5. Cart & Checkout:
+
+   * Cart management
+   * Customer details form
+   * Delivery address
+   * Order notes
+
+6. WhatsApp Checkout Integration:
+
+   * Generate structured WhatsApp order message
+   * Include:
+
+     * Product names
+     * Variants
+     * Quantity
+     * Total price
+     * Customer details
+     * Delivery time
+     * Delivery address
+     * Notes
+     * Product image URLs
+   * Redirect to WhatsApp with prefilled order
+
+7. Order Management System:
+
+   * Status workflow:
+     Pending / Confirmed / In Baking / Out for Delivery / Completed
+   * Calendar view of scheduled deliveries
+
+8. Nice-to-Have Premium Features:
+
+   * Coupon system
+   * Wishlist/Favorites
+   * Popular products section
+   * Recommendation engine
+   * Dark/light mode toggle
+   * Toast notifications
+   * Skeleton loaders
+   * PWA support
+   * SEO optimization
+
+PHASE IMPLEMENTATION PLAN:
+Phase 1:
+
+* Initialize project architecture
+* Setup dependencies
+* Configure Tailwind/shadcn/Supabase
+* Setup folder structure
+* Create database schema plan
+
+Phase 2:
+
+* Implement authentication and role protection
+* Admin login system
+
+Phase 3:
+
+* Build database schema and Supabase tables
+
+Phase 4:
+
+* Build Admin Dashboard UI/Layout
+
+Phase 5:
+
+* Build Category/Product CRUD
+
+Phase 6:
+
+* Build Storefront Homepage/Product Pages
+
+Phase 7:
+
+* Build Cart + Product Configurator
+
+Phase 8:
+
+* Build Delivery Scheduling Logic
+
+Phase 9:
+
+* Build WhatsApp Checkout Integration
+
+Phase 10:
+
+* Build Order Management Dashboard
+
+Phase 11:
+
+* Add Premium Enhancements / Polish / Optimization
+
+START NOW WITH PHASE 1 ONLY.
+
+Before coding:
+
+1. Briefly explain your implementation plan for Phase 1.
+2. Then execute Phase 1 completely.
+3. Stop and wait for my approval.
