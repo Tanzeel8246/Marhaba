@@ -63,7 +63,7 @@ router.post("/coupons/validate", async (req, res) => {
       valid: false,
       coupon,
       discountAmount: 0,
-      message: `Minimum order amount of $${minOrder.toFixed(2)} required.`,
+      message: `Minimum order amount of Rs. ${minOrder.toFixed(0)} required.`,
     });
     return;
   }

@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { Plus, Trash2, Ticket } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currency";
 
 interface CouponForm { code: string; discountType: string; discountValue: string; minOrderAmount: string; maxUses: string; isActive: boolean; expiresAt: string }
 
@@ -66,8 +67,8 @@ export default function AdminCouponsPage() {
                       <Badge variant={c.isActive ? "default" : "secondary"} className="text-xs">{c.isActive ? "Active" : "Inactive"}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {c.discountType === "percentage" ? `${Number(c.discountValue)}% off` : `$${Number(c.discountValue)} off`}
-                      {c.minOrderAmount && ` · Min $${Number(c.minOrderAmount)}`}
+                      {c.discountType === "percentage" ? `${Number(c.discountValue)}% off` : `${formatCurrency(Number(c.discountValue))} off`}
+                      {c.minOrderAmount && ` · Min ${formatCurrency(Number(c.minOrderAmount))}`}
                       {c.maxUses && ` · ${c.usedCount}/${c.maxUses} uses`}
                       {!c.maxUses && ` · ${c.usedCount} uses`}
                     </p>
@@ -101,7 +102,7 @@ export default function AdminCouponsPage() {
                 <FormField control={form.control} name="discountValue" render={({ field }) => (<FormItem><FormLabel>Value</FormLabel><FormControl><Input type="number" step="0.01" placeholder="10" required {...field}/></FormControl></FormItem>)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="minOrderAmount" render={({ field }) => (<FormItem><FormLabel>Min Order ($)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="0" {...field}/></FormControl></FormItem>)} />
+              <FormField control={form.control} name="minOrderAmount" render={({ field }) => (<FormItem><FormLabel>Min Order (Rs.)</FormLabel><FormControl><Input type="number" step="1" placeholder="0" {...field}/></FormControl></FormItem>)} />
                 <FormField control={form.control} name="maxUses" render={({ field }) => (<FormItem><FormLabel>Max Uses</FormLabel><FormControl><Input type="number" placeholder="Unlimited" {...field}/></FormControl></FormItem>)} />
               </div>
               <FormField control={form.control} name="expiresAt" render={({ field }) => (<FormItem><FormLabel>Expires At (optional)</FormLabel><FormControl><Input type="datetime-local" {...field}/></FormControl></FormItem>)} />
