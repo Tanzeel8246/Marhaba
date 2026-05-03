@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Minus, Plus, ShoppingCart, ArrowLeft, ShoppingBag } from "lucide-react";
 import { Link } from "wouter";
+import { formatCurrency } from "@/lib/currency";
 
 interface Variant { name: string; type: string; options: Array<{ label: string; priceAdjustment: number }> }
 interface Addon { name: string; price: number }
@@ -140,7 +141,7 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             {product.category && <Badge variant="secondary">{product.category.name}</Badge>}
             <h1 className="text-3xl font-serif font-bold">{product.name}</h1>
-            <div className="text-3xl font-bold text-primary">${price.toFixed(2)}</div>
+            <div className="text-3xl font-bold text-primary">{formatCurrency(price)}</div>
             {product.description && <p className="text-muted-foreground leading-relaxed">{product.description}</p>}
 
             {!product.isAvailable && (
@@ -168,7 +169,7 @@ export default function ProductDetailPage() {
                         {opt.label}
                         {opt.priceAdjustment !== 0 && (
                           <span className="ml-1 text-xs opacity-75">
-                            {opt.priceAdjustment > 0 ? "+" : ""}${opt.priceAdjustment.toFixed(2)}
+                            {opt.priceAdjustment > 0 ? "+" : ""}{formatCurrency(opt.priceAdjustment)}
                           </span>
                         )}
                       </button>
@@ -195,7 +196,7 @@ export default function ProductDetailPage() {
                         }}
                       />
                       <label htmlFor={`addon-${addon.name}`} className="text-sm cursor-pointer">
-                        {addon.name} <span className="text-muted-foreground">+${addon.price.toFixed(2)}</span>
+                        {addon.name} <span className="text-muted-foreground">+{formatCurrency(addon.price)}</span>
                       </label>
                     </div>
                   ))}
@@ -234,7 +235,7 @@ export default function ProductDetailPage() {
 
             <div className="pt-2">
               <div className="text-lg font-semibold mb-3">
-                Total: <span className="text-primary">${(price * quantity).toFixed(2)}</span>
+                Total: <span className="text-primary">{formatCurrency(price * quantity)}</span>
               </div>
               <Button
                 size="lg"
@@ -269,7 +270,7 @@ export default function ProductDetailPage() {
                     </div>
                     <CardContent className="p-3">
                       <p className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">{p.name}</p>
-                      <p className="text-sm font-bold text-primary mt-1">${Number(p.basePrice).toFixed(2)}</p>
+                      <p className="text-sm font-bold text-primary mt-1">{formatCurrency(Number(p.basePrice))}</p>
                     </CardContent>
                   </Card>
                 </Link>

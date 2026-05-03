@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Search, ShoppingBag, X } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 function ProductCard({ product }: { product: { id: number; name: string; basePrice: string | number; imageUrls: unknown; description?: string | null; isAvailable: boolean; category?: { name: string } | null } }) {
   const images = (product.imageUrls as string[]) ?? [];
@@ -34,7 +35,7 @@ function ProductCard({ product }: { product: { id: number; name: string; basePri
         <CardContent className="p-4">
           <h3 className="font-semibold leading-tight mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
           {product.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{product.description}</p>}
-          <p className="font-bold text-primary">from ${Number(product.basePrice).toFixed(2)}</p>
+          <p className="font-bold text-primary">from {formatCurrency(Number(product.basePrice))}</p>
         </CardContent>
       </Card>
     </Link>

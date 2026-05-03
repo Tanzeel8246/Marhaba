@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 import { ShoppingBag, DollarSign, Clock, TrendingUp } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { format } from "date-fns";
 
@@ -36,7 +37,7 @@ export default function AdminDashboardPage() {
 
   const stats = [
     { label: "Total Orders", value: summary?.totalOrders ?? 0, icon: ShoppingBag, sub: `${summary?.todayOrders ?? 0} today` },
-    { label: "Total Revenue", value: `$${(summary?.totalRevenue ?? 0).toFixed(2)}`, icon: DollarSign, sub: `$${(summary?.todayRevenue ?? 0).toFixed(2)} today` },
+    { label: "Total Revenue", value: formatCurrency(summary?.totalRevenue ?? 0), icon: DollarSign, sub: `${formatCurrency(summary?.todayRevenue ?? 0)} today` },
     { label: "Pending", value: summary?.pendingOrders ?? 0, icon: Clock, sub: "Needs action" },
     { label: "Status Breakdown", value: (summary?.statusBreakdown ?? []).length, icon: TrendingUp, sub: "Across all stages" },
   ];
@@ -111,7 +112,7 @@ export default function AdminDashboardPage() {
                     <div>
                       <p className="text-sm font-medium">{order.customerName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(order.createdAt), "MMM d, h:mm a")} · ${Number(order.totalAmount).toFixed(2)}
+                        {format(new Date(order.createdAt), "MMM d, h:mm a")} · {formatCurrency(Number(order.totalAmount))}
                       </p>
                     </div>
                     <Badge className={`text-xs ${STATUS_COLORS[order.status] ?? ""}`}>

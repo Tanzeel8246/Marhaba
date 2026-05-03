@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currency";
 
 const STATUS_STEPS = ["pending","confirmed","in_baking","out_for_delivery","completed"] as const;
 const STATUS_LABELS: Record<string, string> = {
@@ -106,7 +107,7 @@ export default function AdminOrdersPage() {
                           <p>{order.deliveryDate}</p>
                           {order.deliveryTimeSlot && <p className="text-xs text-muted-foreground">{order.deliveryTimeSlot}</p>}
                         </td>
-                        <td className="px-4 py-3 font-semibold">${Number(order.totalAmount).toFixed(2)}</td>
+                        <td className="px-4 py-3 font-semibold">{formatCurrency(Number(order.totalAmount))}</td>
                         <td className="px-4 py-3">
                           <Badge className={`text-xs ${STATUS_COLORS[order.status] ?? ""}`}>
                             {STATUS_LABELS[order.status] ?? order.status}
@@ -190,7 +191,7 @@ export default function AdminOrdersPage() {
                           {(item.selectedAddons ?? []).length > 0 && <p className="text-xs text-muted-foreground">Add-ons: {item.selectedAddons.join(", ")}</p>}
                           {item.customMessage && <p className="text-xs italic text-muted-foreground">"{item.customMessage}"</p>}
                         </div>
-                        <span className="font-semibold">${Number(item.subtotal).toFixed(2)}</span>
+                        <span className="font-semibold">{formatCurrency(Number(item.subtotal))}</span>
                       </div>
                     ))}
                   </div>
@@ -198,7 +199,7 @@ export default function AdminOrdersPage() {
 
                 <div className="flex justify-between font-bold text-base border-t border-border pt-3">
                   <span>Total</span>
-                  <span className="text-primary">${Number(selectedOrder.totalAmount).toFixed(2)}</span>
+                  <span className="text-primary">{formatCurrency(Number(selectedOrder.totalAmount))}</span>
                 </div>
               </div>
             </>

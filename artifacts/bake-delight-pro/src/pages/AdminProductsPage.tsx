@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Pencil, Trash2, ShoppingBag } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currency";
 
 interface VariantOption { label: string; priceAdjustment: number }
 interface Variant { name: string; type: string; options: VariantOption[] }
@@ -131,7 +132,7 @@ export default function AdminProductsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate">{p.name}</p>
-                      <p className="text-sm text-muted-foreground">${Number(p.basePrice).toFixed(2)} {p.category && `· ${p.category.name}`}</p>
+                      <p className="text-sm text-muted-foreground">{formatCurrency(Number(p.basePrice))} {p.category && `· ${p.category.name}`}</p>
                       <p className="text-xs text-muted-foreground">{p.orderCount} orders</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
@@ -171,7 +172,7 @@ export default function AdminProductsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="basePrice" render={({ field }) => (
-                  <FormItem><FormLabel>Base Price ($)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Base Price (Rs.)</FormLabel><FormControl><Input type="number" step="1" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="categoryId" render={({ field }) => (
                   <FormItem><FormLabel>Category</FormLabel>

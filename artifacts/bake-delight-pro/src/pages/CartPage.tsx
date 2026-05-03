@@ -16,6 +16,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, ShoppingBag, Minus, Plus, Tag, MessageCircle } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 import { addDays, format, isBefore } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -106,7 +107,7 @@ export default function CartPage() {
         const variants = Object.entries(item.selectedVariants).map(([k, v]) => `${k}: ${v}`).join(", ");
         const addons = item.selectedAddons.join(", ");
         return [
-          `• ${item.productName} × ${item.quantity} = $${item.subtotal.toFixed(2)}`,
+          `• ${item.productName} × ${item.quantity} = Rs. ${Math.round(item.subtotal).toLocaleString("en-US")}`,
           variants ? `  Variants: ${variants}` : null,
           addons ? `  Add-ons: ${addons}` : null,
           item.customMessage ? `  Message: "${item.customMessage}"` : null,
@@ -114,9 +115,9 @@ export default function CartPage() {
         ].filter(Boolean).join("\n");
       }),
       "",
-      `*Subtotal:* $${subtotal.toFixed(2)}`,
-      appliedCoupon ? `*Discount (${appliedCoupon.code}):* -$${discount.toFixed(2)}` : null,
-      `*Total:* $${grandTotal.toFixed(2)}`,
+      `*Subtotal:* Rs. ${Math.round(subtotal).toLocaleString("en-US")}`,
+      appliedCoupon ? `*Discount (${appliedCoupon.code}):* -Rs. ${Math.round(discount).toLocaleString("en-US")}` : null,
+      `*Total:* Rs. ${Math.round(grandTotal).toLocaleString("en-US")}`,
       "",
       `*Delivery Date:* ${orderData.deliveryDate}`,
       orderData.deliveryTimeSlot ? `*Time Slot:* ${orderData.deliveryTimeSlot}` : null,
@@ -229,7 +230,7 @@ export default function CartPage() {
                           </Button>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm">${item.subtotal.toFixed(2)}</span>
+                          <span className="font-bold text-sm">{formatCurrency(item.subtotal)}</span>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeItem(i)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -252,7 +253,7 @@ export default function CartPage() {
                         <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="Your name" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="customerPhone" render={({ field }) => (
-                        <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+1 234 567 8900" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+92 300 0000000" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
                     <FormField control={form.control} name="customerEmail" render={({ field }) => (
@@ -314,17 +315,17 @@ export default function CartPage() {
               <CardHeader><CardTitle className="text-lg">Order Summary</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
                   {appliedCoupon && (
                     <div className="flex justify-between text-green-600">
                       <span className="flex items-center gap-1"><Tag className="h-3 w-3" />{appliedCoupon.code}</span>
-                      <span>-${discount.toFixed(2)}</span>
+                      <span>-{formatCurrency(discount)}</span>
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between font-bold text-base">
                     <span>Total</span>
-                    <span className="text-primary">${grandTotal.toFixed(2)}</span>
+                    <span className="text-primary">{formatCurrency(grandTotal)}</span>
                   </div>
                 </div>
 

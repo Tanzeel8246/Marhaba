@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 import { useState, useEffect } from "react";
+import { formatCurrency } from "@/lib/currency";
 
 function BannerCarousel() {
   const { data: banners, isLoading } = useListBanners();
@@ -104,7 +105,7 @@ function ProductCard({ product }: { product: { id: number; name: string; basePri
           {product.description && (
             <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{product.description}</p>
           )}
-          <p className="font-bold text-primary">from ${Number(product.basePrice).toFixed(2)}</p>
+          <p className="font-bold text-primary">from {formatCurrency(Number(product.basePrice))}</p>
         </CardContent>
       </Card>
     </Link>

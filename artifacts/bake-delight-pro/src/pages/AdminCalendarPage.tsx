@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, getDay } from "date-fns";
+import { formatCurrency } from "@/lib/currency";
 
 const STATUS_LABELS: Record<string, string> = { pending: "Pending", confirmed: "Confirmed", in_baking: "In Baking", out_for_delivery: "Out for Delivery", completed: "Completed", cancelled: "Cancelled" };
 
@@ -98,7 +99,7 @@ export default function AdminCalendarPage() {
                   <p className="text-xs text-muted-foreground">{order.deliveryTimeSlot ?? "Any time"}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">${Number(order.totalAmount).toFixed(2)}</span>
+                  <span className="text-sm font-semibold">{formatCurrency(Number(order.totalAmount))}</span>
                   <Badge className="text-xs">{STATUS_LABELS[order.status] ?? order.status}</Badge>
                 </div>
               </div>
