@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Moon, Sun, Menu, X } from "lucide-react";
+import { ShoppingCart, Moon, Sun, Menu, X, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { useCartStore } from "@/stores/cart";
@@ -15,6 +15,7 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/shop", label: "Shop" },
+    { href: "/admin", label: "Admin Login" },
   ];
 
   return (
@@ -35,7 +36,11 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
                     location === link.href ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
-                  {link.label}
+                  {link.href === "/admin" ? (
+                    <span className="inline-flex items-center gap-1.5"><Shield className="h-3.5 w-3.5" /> {link.label}</span>
+                  ) : (
+                    link.label
+                  )}
                 </Link>
               ))}
             </nav>
@@ -75,7 +80,11 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
                 onClick={() => setMenuOpen(false)}
                 className={`text-sm font-medium ${location === link.href ? "text-primary" : "text-muted-foreground"}`}
               >
-                {link.label}
+                {link.href === "/admin" ? (
+                  <span className="inline-flex items-center gap-1.5"><Shield className="h-3.5 w-3.5" /> {link.label}</span>
+                ) : (
+                  link.label
+                )}
               </Link>
             ))}
           </div>
