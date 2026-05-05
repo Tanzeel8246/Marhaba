@@ -1,1 +1,138 @@
-[]
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567801",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide01Cover.tsx",
+    "title": "ٹائٹل — Bake Delight Pro",
+    "description": "پروجیکٹ کا تعارف",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567802",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide02Overview.tsx",
+    "title": "پروجیکٹ کیا ہے؟",
+    "description": "مقصد اور اہم خصوصیات",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567803",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide03TechStack.tsx",
+    "title": "تین پرتوں کا Architecture",
+    "description": "فرنٹ اینڈ، بیک اینڈ، ڈیٹا بیس",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567804",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide04Frontend1.tsx",
+    "title": "فرنٹ اینڈ — React اور Vite",
+    "description": "React، Vite، TypeScript",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567805",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide05Frontend2.tsx",
+    "title": "فرنٹ اینڈ — اہم لائبریریاں",
+    "description": "TanStack Query، Zustand، shadcn/ui، Recharts",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567806",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide06Backend1.tsx",
+    "title": "بیک اینڈ — Express اور Node.js",
+    "description": "Node.js، Express 5، Zod",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567807",
+    "position": 7,
+    "filepath": "src/pages/slides/Slide07Backend2.tsx",
+    "title": "بیک اینڈ — API کا نظام",
+    "description": "OpenAPI، Routes، Logging",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567808",
+    "position": 8,
+    "filepath": "src/pages/slides/Slide08Database.tsx",
+    "title": "ڈیٹا بیس — PostgreSQL اور Drizzle",
+    "description": "PostgreSQL، Drizzle ORM، Tables",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567809",
+    "position": 9,
+    "filepath": "src/pages/slides/Slide09Monorepo.tsx",
+    "title": "pnpm Monorepo ساخت",
+    "description": "فولڈر structure اور pnpm کیوں",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567810",
+    "position": 10,
+    "filepath": "src/pages/slides/Slide10ReplitDeploy.tsx",
+    "title": "Replit پر Live",
+    "description": "ابھی publish شدہ پروجیکٹ",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567811",
+    "position": 11,
+    "filepath": "src/pages/slides/Slide11FreeHosting.tsx",
+    "title": "فرنٹ اینڈ کے لیے مفت پلیٹ فارم",
+    "description": "Vercel، Netlify، GitHub Pages، Cloudflare",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567812",
+    "position": 12,
+    "filepath": "src/pages/slides/Slide12BackendFree.tsx",
+    "title": "بیک اینڈ کے لیے مفت پلیٹ فارم",
+    "description": "Render، Railway، Fly.io، Koyeb",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567813",
+    "position": 13,
+    "filepath": "src/pages/slides/Slide13DBFree.tsx",
+    "title": "ڈیٹا بیس کے لیے مفت پلیٹ فارم",
+    "description": "Supabase، Neon، Aiven، ElephantSQL",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567814",
+    "position": 14,
+    "filepath": "src/pages/slides/Slide14DeployGuide.tsx",
+    "title": "Deploy کرنے کا طریقہ",
+    "description": "Render اور Vercel step-by-step",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567815",
+    "position": 15,
+    "filepath": "src/pages/slides/Slide15DataSafety.tsx",
+    "title": "ڈیٹا مستقل کیسے محفوظ رہے؟",
+    "description": "Backups، Migrations، SSL",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567816",
+    "position": 16,
+    "filepath": "src/pages/slides/Slide16RecommendedStack.tsx",
+    "title": "بہترین مفت Stack کی سفارش",
+    "description": "Vercel + Render + Supabase",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567817",
+    "position": 17,
+    "filepath": "src/pages/slides/Slide17Closing.tsx",
+    "title": "اختتام",
+    "description": "مکمل، محفوظ، اور مستقبل کے لیے تیار",
+    "speakerNotes": ""
+  }
+]

@@ -30,3 +30,21 @@ id = "2KnGuz-A_mnfbDbDNs5yh"
 uri = "file://artifacts/bake-delight-pro/public/hero-banner-1.png"
 type = "image"
 title = "Hero Banner Bakery"
+
+[[generated]]
+id = "TwgPWpNmC80Fc0O3P1NlU"
+uri = "file://artifacts/bdp-presentation/public/hero-bakery.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "IliANXCunVN4_cjX3tFjC"
+uri = "file://artifacts/bdp-presentation/public/frontend-tech.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "o0C0rakZgsLP7IY6kmCz6"
+uri = "file://artifacts/bdp-presentation/public/backend-tech.png"
+type = "image"
+title = "generated_image"
