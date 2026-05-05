@@ -131,7 +131,7 @@ export default function AdminSettingsPage() {
                   <Input
                     value={settings.storeName}
                     onChange={(e) => update("storeName", e.target.value)}
-                    placeholder="Bake Delight Pro"
+                    placeholder="مرحبا سویٹس اینڈ بیکرز"
                   />
                 </div>
                 <div className="space-y-1.5">

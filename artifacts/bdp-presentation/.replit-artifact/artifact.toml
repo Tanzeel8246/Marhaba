@@ -1,6 +1,6 @@
 kind = "slides"
 previewPath = "/bdp-presentation/"
-title = "Bake Delight Pro — Technical Presentation"
+title = "مرحبا سویٹس اینڈ بیکرز — Technical Presentation"
 version = "1.0.0"
 id = "artifacts/bdp-presentation"
 router = "path"

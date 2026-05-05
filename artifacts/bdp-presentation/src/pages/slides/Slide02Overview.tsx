@@ -7,7 +7,7 @@ export default function Slide02Overview() {
         <div style={{ marginBottom: "5vh" }}>
           <p style={{ fontFamily: "Noto Nastaliq Urdu, serif", fontSize: "1.4vw", color: "#D4843E", marginBottom: "1vh" }}>پروجیکٹ کا تعارف</p>
           <h2 style={{ fontFamily: "Playfair Display, serif", fontSize: "4.5vw", fontWeight: 900, color: "#FFF8F0", letterSpacing: "-0.02em" }}>
-            Bake Delight Pro کیا ہے؟
+            مرحبا سویٹس اینڈ بیکرز کیا ہے؟
           </h2>
         </div>
 

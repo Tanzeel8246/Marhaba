@@ -24,7 +24,7 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl font-serif font-bold text-primary tracking-tight">Bake Delight Pro</span>
+              <span className="text-2xl font-serif font-bold text-primary tracking-tight">مرحبا سویٹس اینڈ بیکرز</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
@@ -93,7 +93,7 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
       <footer className="border-t border-border bg-card mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-muted-foreground">
-          <p className="font-serif text-lg text-foreground mb-1">Bake Delight Pro</p>
+          <p className="font-serif text-lg text-foreground mb-1">مرحبا سویٹس اینڈ بیکرز</p>
           <p>Handcrafted with love. Order by WhatsApp.</p>
         </div>
       </footer>

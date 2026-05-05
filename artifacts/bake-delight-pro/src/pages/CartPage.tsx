@@ -120,7 +120,7 @@ export default function CartPage() {
 
   const generateWhatsappMessage = (data: CheckoutForm, cartItems: typeof items) => {
     const lines = [
-      "🎂 *نیا آرڈر — Bake Delight Pro*",
+      "🎂 *نیا آرڈر — مرحبا سویٹس اینڈ بیکرز*",
       "",
       `*کسٹمر:* ${data.customerName}`,
       `*فون:* ${data.customerPhone}`,

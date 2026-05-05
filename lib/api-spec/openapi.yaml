@@ -3,7 +3,7 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: Bake Delight Pro API
+  description: مرحبا سویٹس اینڈ بیکرز API
 servers:
   - url: /api
     description: Base API path

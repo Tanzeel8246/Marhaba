@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Bake Delight Pro"
+title = "مرحبا سویٹس اینڈ بیکرز"
 version = "1.0.0"
 id = "artifacts/bake-delight-pro"
 router = "path"

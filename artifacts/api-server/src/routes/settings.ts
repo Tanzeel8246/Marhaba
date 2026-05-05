@@ -10,7 +10,7 @@ const ADMIN_SESSION_COOKIE = "bake_admin_session";
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   whatsappNumber: "923001234567",
-  storeName: "Bake Delight Pro",
+  storeName: "مرحبا سویٹس اینڈ بیکرز",
   storeTagline: "Handcrafted with love. Order by WhatsApp.",
   storeAddress: "Karachi, Pakistan",
   minLeadHours: "24",

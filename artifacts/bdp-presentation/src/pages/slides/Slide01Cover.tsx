@@ -24,7 +24,7 @@ export default function Slide01Cover() {
           textWrap: "balance",
           marginBottom: "2vh"
         }}>
-          Bake Delight Pro
+          مرحبا سویٹس اینڈ بیکرز
         </h1>
         <p style={{
           fontFamily: "Noto Nastaliq Urdu, serif",

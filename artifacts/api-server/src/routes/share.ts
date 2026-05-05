@@ -32,7 +32,7 @@ router.get("/share/product/:id", async (req, res) => {
   const productPageUrl = `${baseUrl}/products/${product.id}`;
   const shareImageUrl = imageUrl;
 
-  const title = `${product.name} — Bake Delight Pro`;
+  const title = `${product.name} — مرحبا سویٹس اینڈ بیکرز`;
   const description = typeof product.description === "string"
     ? product.description.slice(0, 200)
     : "تازہ بیکری پروڈکٹ";

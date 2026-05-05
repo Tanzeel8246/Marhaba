@@ -1,8 +1,8 @@
-# Bake Delight Pro — Workspace
+# مرحبا سویٹس اینڈ بیکرز — Workspace
 
 ## Overview
 
-pnpm workspace monorepo for "Bake Delight Pro", a production-grade bakery e-commerce app.
+pnpm workspace monorepo for "مرحبا سویٹس اینڈ بیکرز", a production-grade bakery e-commerce app.
 Customers browse and add custom items to cart, then checkout via WhatsApp. Admins manage everything through a protected dashboard.
 
 ## Stack

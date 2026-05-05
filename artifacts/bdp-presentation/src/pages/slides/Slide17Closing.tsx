@@ -24,7 +24,7 @@ export default function Slide17Closing() {
           textWrap: "balance",
           marginBottom: "3vh"
         }}>
-          Bake Delight Pro
+          مرحبا سویٹس اینڈ بیکرز
         </h2>
         <p style={{
           fontFamily: "Noto Nastaliq Urdu, serif",

@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
       </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-serif font-bold text-primary">Bake Delight Pro</h1>
+          <h1 className="text-3xl font-serif font-bold text-primary">مرحبا سویٹس اینڈ بیکرز</h1>
           <p className="text-muted-foreground mt-1">Admin Portal</p>
         </div>
         <Card>

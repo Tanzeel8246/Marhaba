@@ -36,7 +36,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border">
         <p className="text-xs text-muted-foreground uppercase tracking-widest">Admin Portal</p>
-        <h2 className="font-serif text-lg font-bold text-primary">Bake Delight Pro</h2>
+        <h2 className="font-serif text-lg font-bold text-primary">مرحبا سویٹس اینڈ بیکرز</h2>
       </div>
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
@@ -95,7 +95,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="font-serif font-bold text-primary">Bake Delight Pro Admin</h1>
+          <h1 className="font-serif font-bold text-primary">مرحبا سویٹس اینڈ بیکرز Admin</h1>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">{children}</main>
       </div>
