@@ -96,16 +96,11 @@ export default function CartPage() {
   const createOrder = useCreateOrder({
     mutation: {
       onSuccess: () => {
-        setOrderPlaced(true);
-        clearCart();
         queryClient.invalidateQueries();
       },
-      onError: (err: { response?: { data?: { error?: string } } }) => {
-        toast({
-          title: "آرڈر نہیں ہو سکا",
-          description: err?.response?.data?.error ?? "دوبارہ کوشش کریں۔",
-          variant: "destructive",
-        });
+      onError: () => {
+        // Order already shown as placed (WhatsApp opened); DB save failed silently
+        queryClient.invalidateQueries();
       },
     },
   });
@@ -121,7 +116,7 @@ export default function CartPage() {
     return isBefore(new Date(dateStr), addDays(new Date(), 0.99));
   };
 
-  const generateWhatsappMessage = (data: CheckoutForm) => {
+  const generateWhatsappMessage = (data: CheckoutForm, cartItems: typeof items) => {
     const lines = [
       "🎂 *نیا آرڈر — Bake Delight Pro*",
       "",
@@ -129,15 +124,16 @@ export default function CartPage() {
       `*فون:* ${data.customerPhone}`,
       data.customerEmail ? `*ای میل:* ${data.customerEmail}` : null,
       "",
-      "*آرڈر:*",
-      ...items.map((item) => {
+      "*آرڈر کی تفصیل:*",
+      ...cartItems.map((item) => {
         const variants = Object.entries(item.selectedVariants).map(([k, v]) => `${k}: ${v}`).join(", ");
         const addons = item.selectedAddons.join(", ");
         return [
-          `• ${item.productName} × ${item.quantity} = ${formatCurrency(item.subtotal)}`,
+          `• *${item.productName}* × ${item.quantity} = ${formatCurrency(item.subtotal)}`,
           variants ? `  Variants: ${variants}` : null,
           addons ? `  Add-ons: ${addons}` : null,
           item.customMessage ? `  پیغام: "${item.customMessage}"` : null,
+          item.productImageUrl ? `  🖼 تصویر: ${item.productImageUrl}` : null,
         ].filter(Boolean).join("\n");
       }),
       "",
@@ -163,12 +159,20 @@ export default function CartPage() {
       return;
     }
 
-    const msg = generateWhatsappMessage(data);
+    // Capture items before cart is cleared
+    const currentItems = [...items];
+
+    // 1. Open WhatsApp immediately (must be in direct user-action context)
+    const msg = generateWhatsappMessage(data, currentItems);
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, "_blank");
 
+    // 2. Show success screen right away — don't wait for DB
     setPlacedOrderData(data);
+    setOrderPlaced(true);
+    clearCart();
 
+    // 3. Save order to DB in background (admin dashboard will receive it)
     createOrder.mutate({
       data: {
         ...data,
@@ -176,7 +180,7 @@ export default function CartPage() {
         deliveryTimeSlot: data.deliveryTimeSlot || null,
         notes: data.notes || null,
         couponCode: appliedCoupon?.code ?? null,
-        items: items.map((item) => ({
+        items: currentItems.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
           selectedVariants: item.selectedVariants,

@@ -201,12 +201,10 @@ router.post("/orders", async (req, res) => {
     return;
   }
 
-  // Check 24-hour lead time
-  const deliveryDate = new Date(orderData.deliveryDate);
-  const now = new Date();
-  const hoursAhead = (deliveryDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-  if (hoursAhead < 24) {
-    res.status(400).json({ error: "Delivery must be scheduled at least 24 hours in advance." });
+  // Check lead time: delivery date must be at least tomorrow (date comparison, timezone-safe)
+  const todayStr = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local timezone
+  if (orderData.deliveryDate <= todayStr) {
+    res.status(400).json({ error: "کم از کم کل کی تاریخ منتخب کریں۔" });
     return;
   }
 
