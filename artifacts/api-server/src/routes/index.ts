@@ -8,6 +8,7 @@ import blackoutDatesRouter from "./blackout-dates";
 import couponsRouter from "./coupons";
 import adminRouter from "./admin";
 import settingsRouter from "./settings";
+import shareRouter from "./share";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(blackoutDatesRouter);
 router.use(couponsRouter);
 router.use(adminRouter);
 router.use(settingsRouter);
+router.use(shareRouter);
 
 export default router;

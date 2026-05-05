@@ -116,6 +116,8 @@ export default function CartPage() {
     return isBefore(new Date(dateStr), addDays(new Date(), 0.99));
   };
 
+  const siteOrigin = window.location.origin;
+
   const generateWhatsappMessage = (data: CheckoutForm, cartItems: typeof items) => {
     const lines = [
       "🎂 *نیا آرڈر — Bake Delight Pro*",
@@ -128,11 +130,13 @@ export default function CartPage() {
       ...cartItems.map((item) => {
         const variants = Object.entries(item.selectedVariants).map(([k, v]) => `${k}: ${v}`).join(", ");
         const addons = item.selectedAddons.join(", ");
+        const shareUrl = `${siteOrigin}/api/share/product/${item.productId}`;
         return [
           `• *${item.productName}* × ${item.quantity} = ${formatCurrency(item.subtotal)}`,
           variants ? `  Variants: ${variants}` : null,
           addons ? `  Add-ons: ${addons}` : null,
           item.customMessage ? `  پیغام: "${item.customMessage}"` : null,
+          `  🔗 پروڈکٹ: ${shareUrl}`,
           item.productImageUrl ? `  🖼 تصویر: ${item.productImageUrl}` : null,
         ].filter(Boolean).join("\n");
       }),
