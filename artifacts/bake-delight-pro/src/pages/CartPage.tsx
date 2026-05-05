@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useCartStore } from "@/stores/cart";
 import { useValidateCoupon, useListBlackoutDates, useCheckDeliveryCapacity, getCheckDeliveryCapacityQueryKey, useCreateOrder } from "@workspace/api-client-react";
@@ -51,6 +51,14 @@ export default function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placedOrderData, setPlacedOrderData] = useState<CheckoutForm | null>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState("923001234567");
+
+  useEffect(() => {
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((data) => { if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber); })
+      .catch(() => {});
+  }, []);
 
   const { data: blackoutDates } = useListBlackoutDates();
   const blackoutSet = new Set((blackoutDates ?? []).map((b) => b.date));
@@ -156,7 +164,7 @@ export default function CartPage() {
     }
 
     const msg = generateWhatsappMessage(data);
-    const waUrl = `https://wa.me/1234567890?text=${encodeURIComponent(msg)}`;
+    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, "_blank");
 
     setPlacedOrderData(data);

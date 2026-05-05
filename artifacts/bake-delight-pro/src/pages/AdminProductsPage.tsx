@@ -89,7 +89,7 @@ export default function AdminProductsPage() {
     const payload = {
       name: data.name, slug: data.slug, description: data.description || null,
       basePrice: Number(data.basePrice),
-      categoryId: data.categoryId ? Number(data.categoryId) : null,
+      categoryId: (data.categoryId && data.categoryId !== "none") ? Number(data.categoryId) : null,
       imageUrls: data.imageUrls.split("\n").map(s => s.trim()).filter(Boolean),
       variants, addons,
       allowCustomMessage: data.allowCustomMessage,

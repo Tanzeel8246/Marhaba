@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Package, Tag, ClipboardList, Calendar, Image, Ban, Ticket, Moon, Sun, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Package, Tag, ClipboardList, Calendar, Image, Ban, Ticket, Moon, Sun, LogOut, Menu, X, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAdminLogout } from "@workspace/api-client-react";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/admin/banners", label: "Banners", icon: Image },
   { href: "/admin/blackout-dates", label: "Blackout Dates", icon: Ban },
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

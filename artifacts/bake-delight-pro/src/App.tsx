@@ -17,6 +17,7 @@ import AdminCalendarPage from "@/pages/AdminCalendarPage";
 import AdminBannersPage from "@/pages/AdminBannersPage";
 import AdminBlackoutDatesPage from "@/pages/AdminBlackoutDatesPage";
 import AdminCouponsPage from "@/pages/AdminCouponsPage";
+import AdminSettingsPage from "@/pages/AdminSettingsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/admin/banners" component={AdminBannersPage} />
       <Route path="/admin/blackout-dates" component={AdminBlackoutDatesPage} />
       <Route path="/admin/coupons" component={AdminCouponsPage} />
+      <Route path="/admin/settings" component={AdminSettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );
