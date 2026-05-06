@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Minus, Plus, ShoppingCart, ArrowLeft, ShoppingBag } from "lucide-react";
+import { Minus, Plus, ShoppingCart, ArrowLeft, ArrowRight, ShoppingBag } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/currency";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface Variant { name: string; type: string; options: Array<{ label: string; priceAdjustment: number }> }
 interface Addon { name: string; price: number }
@@ -24,6 +25,7 @@ export default function ProductDetailPage() {
   const id = Number(params.id);
   const { toast } = useToast();
   const addItem = useCartStore((s) => s.addItem);
+  const { t, isUrdu } = useLanguage();
 
   const { data: product, isLoading } = useGetProduct(id, {
     query: { queryKey: getGetProductQueryKey(id), enabled: !!id },
@@ -37,6 +39,8 @@ export default function ProductDetailPage() {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState("");
+
+  const BackArrow = isUrdu ? ArrowRight : ArrowLeft;
 
   if (isLoading) {
     return (
@@ -60,8 +64,8 @@ export default function ProductDetailPage() {
     return (
       <StorefrontLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <p className="text-muted-foreground">Product not found.</p>
-          <Link href="/shop"><Button className="mt-4">Back to Shop</Button></Link>
+          <p className="text-muted-foreground">{t.product.notFound}</p>
+          <Link href="/shop"><Button className="mt-4">{t.product.backToShop}</Button></Link>
         </div>
       </StorefrontLayout>
     );
@@ -85,7 +89,7 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     const allVariantsSelected = variants.every((v) => selectedVariants[v.type] || selectedVariants[v.name]);
     if (!allVariantsSelected && variants.length > 0) {
-      toast({ title: "Please select all options", variant: "destructive" });
+      toast({ title: t.product.selectOptions, variant: "destructive" });
       return;
     }
     addItem({
@@ -99,7 +103,7 @@ export default function ProductDetailPage() {
       customMessage: customMessage || null,
       subtotal: price * quantity,
     });
-    toast({ title: "Added to cart!", description: `${product.name} × ${quantity}` });
+    toast({ title: t.product.addedToCart(product.name, quantity) });
     navigate("/cart");
   };
 
@@ -107,7 +111,7 @@ export default function ProductDetailPage() {
     <StorefrontLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <button onClick={() => history.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back
+          <BackArrow className="h-4 w-4" /> {t.product.back}
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -145,7 +149,7 @@ export default function ProductDetailPage() {
             {product.description && <p className="text-muted-foreground leading-relaxed">{product.description}</p>}
 
             {!product.isAvailable && (
-              <Badge variant="destructive" className="text-sm">Currently Unavailable</Badge>
+              <Badge variant="destructive" className="text-sm">{t.product.unavailable}</Badge>
             )}
 
             {/* Variants */}
@@ -182,7 +186,7 @@ export default function ProductDetailPage() {
             {/* Add-ons */}
             {addons.length > 0 && (
               <div className="space-y-2">
-                <Label className="font-semibold">Add-ons</Label>
+                <Label className="font-semibold">{t.product.addons}</Label>
                 <div className="space-y-2">
                   {addons.map((addon) => (
                     <div key={addon.name} className="flex items-center gap-3">
@@ -207,9 +211,9 @@ export default function ProductDetailPage() {
             {/* Custom message */}
             {product.allowCustomMessage && (
               <div className="space-y-2">
-                <Label className="font-semibold">Cake Message (optional)</Label>
+                <Label className="font-semibold">{t.product.customMessage}</Label>
                 <Textarea
-                  placeholder="e.g. Happy Birthday Sarah!"
+                  placeholder={t.product.customMessagePlaceholder}
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   maxLength={100}
@@ -221,7 +225,7 @@ export default function ProductDetailPage() {
 
             {/* Quantity */}
             <div className="flex items-center gap-3">
-              <Label className="font-semibold">Quantity</Label>
+              <Label className="font-semibold">{t.product.quantity}</Label>
               <div className="flex items-center gap-2 border border-border rounded-lg p-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
                   <Minus className="h-4 w-4" />
@@ -235,7 +239,7 @@ export default function ProductDetailPage() {
 
             <div className="pt-2">
               <div className="text-lg font-semibold mb-3">
-                Total: <span className="text-primary">{formatCurrency(price * quantity)}</span>
+                {t.product.total}: <span className="text-primary">{formatCurrency(price * quantity)}</span>
               </div>
               <Button
                 size="lg"
@@ -245,7 +249,7 @@ export default function ProductDetailPage() {
                 data-testid="button-add-to-cart"
               >
                 <ShoppingCart className="h-5 w-5" />
-                {product.isAvailable ? "Add to Cart" : "Unavailable"}
+                {product.isAvailable ? t.product.addToCart : t.product.unavailableBtn}
               </Button>
             </div>
           </div>
@@ -254,7 +258,7 @@ export default function ProductDetailPage() {
         {/* Related products */}
         {related && related.length > 0 && (
           <section className="mt-16">
-            <h2 className="text-xl font-serif font-bold mb-6">You Might Also Like</h2>
+            <h2 className="text-xl font-serif font-bold mb-6">{t.product.relatedTitle}</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {related.map((p) => (
                 <Link key={p.id} href={`/products/${p.id}`}>

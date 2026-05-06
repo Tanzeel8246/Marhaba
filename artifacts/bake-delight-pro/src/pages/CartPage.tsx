@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "wouter";
 import { useCartStore } from "@/stores/cart";
 import { useValidateCoupon, useListBlackoutDates, useCheckDeliveryCapacity, getCheckDeliveryCapacityQueryKey, useCreateOrder } from "@workspace/api-client-react";
@@ -15,22 +15,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, ShoppingBag, Minus, Plus, Tag, MessageCircle, CheckCircle2, ArrowLeft, AlertCircle, Clock } from "lucide-react";
+import { Trash2, ShoppingBag, Minus, Plus, Tag, MessageCircle, CheckCircle2, ArrowLeft, ArrowRight, AlertCircle, Clock } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { addDays, format, isBefore } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
-const checkoutSchema = z.object({
-  customerName: z.string().min(2, "نام کم از کم 2 حروف کا ہونا چاہیے"),
-  customerPhone: z.string().min(10, "صحیح فون نمبر درج کریں"),
-  customerEmail: z.string().email("صحیح ای میل درج کریں").optional().or(z.literal("")),
-  deliveryAddress: z.string().min(10, "مکمل پتہ درج کریں"),
-  deliveryDate: z.string().min(1, "ڈیلیوری کی تاریخ منتخب کریں"),
-  deliveryTimeSlot: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type CheckoutForm = z.infer<typeof checkoutSchema>;
+type CheckoutForm = {
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  deliveryAddress: string;
+  deliveryDate: string;
+  deliveryTimeSlot: string;
+  notes: string;
+};
 
 const TIME_SLOTS = [
   "9:00 AM - 12:00 PM",
@@ -39,13 +38,12 @@ const TIME_SLOTS = [
   "6:00 PM - 9:00 PM",
 ];
 
-const STEPS = ["Cart", "Details", "Confirm"] as const;
-
 export default function CartPage() {
   const [, navigate] = useLocation();
   const { items, removeItem, updateQuantity, clearCart, total } = useCartStore();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t, isUrdu } = useLanguage();
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
@@ -59,6 +57,17 @@ export default function CartPage() {
       .then((data) => { if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber); })
       .catch(() => {});
   }, []);
+
+  // Language-aware Zod schema
+  const checkoutSchema = useMemo(() => z.object({
+    customerName: z.string().min(2, t.validation.nameMin),
+    customerPhone: z.string().min(10, t.validation.phoneMin),
+    customerEmail: z.string().email(t.validation.emailInvalid).optional().or(z.literal("")),
+    deliveryAddress: z.string().min(10, t.validation.addressMin),
+    deliveryDate: z.string().min(1, t.validation.dateRequired),
+    deliveryTimeSlot: z.string().optional(),
+    notes: z.string().optional(),
+  }), [t]);
 
   const { data: blackoutDates } = useListBlackoutDates();
   const blackoutSet = new Set((blackoutDates ?? []).map((b) => b.date));
@@ -85,9 +94,9 @@ export default function CartPage() {
       onSuccess: (data) => {
         if (data.valid) {
           setAppliedCoupon({ code: couponCode.toUpperCase(), discountAmount: data.discountAmount });
-          toast({ title: "✅ کوپن لگا دیا گیا!", description: data.message });
+          toast({ title: `✅ ${t.cart.couponCode}`, description: data.message });
         } else {
-          toast({ title: "❌ کوپن غلط ہے", description: data.message, variant: "destructive" });
+          toast({ title: `❌ ${t.cart.couponCode}`, description: data.message, variant: "destructive" });
         }
       },
     },
@@ -95,13 +104,8 @@ export default function CartPage() {
 
   const createOrder = useCreateOrder({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries();
-      },
-      onError: () => {
-        // Order already shown as placed (WhatsApp opened); DB save failed silently
-        queryClient.invalidateQueries();
-      },
+      onSuccess: () => { queryClient.invalidateQueries(); },
+      onError: () => { queryClient.invalidateQueries(); },
     },
   });
 
@@ -118,67 +122,63 @@ export default function CartPage() {
   };
 
   const siteOrigin = window.location.origin;
+  const wa = t.cart.wa;
 
   const generateWhatsappMessage = (data: CheckoutForm, cartItems: typeof items) => {
     const lines = [
-      "🎂 *نیا آرڈر — مرحبا سویٹس اینڈ بیکرز*",
+      wa.header,
       "",
-      `*کسٹمر:* ${data.customerName}`,
-      `*فون:* ${data.customerPhone}`,
-      data.customerEmail ? `*ای میل:* ${data.customerEmail}` : null,
+      `*${wa.customer}:* ${data.customerName}`,
+      `*${wa.phone}:* ${data.customerPhone}`,
+      data.customerEmail ? `*${wa.email}:* ${data.customerEmail}` : null,
       "",
-      "*آرڈر کی تفصیل:*",
+      wa.orderDetails,
       ...cartItems.map((item) => {
         const variants = Object.entries(item.selectedVariants).map(([k, v]) => `${k}: ${v}`).join(", ");
         const addons = item.selectedAddons.join(", ");
         const shareUrl = `${siteOrigin}/api/share/product/${item.productId}`;
         return [
           `• *${item.productName}* × ${item.quantity} = ${formatCurrency(item.subtotal)}`,
-          variants ? `  Variants: ${variants}` : null,
-          addons ? `  Add-ons: ${addons}` : null,
-          item.customMessage ? `  پیغام: "${item.customMessage}"` : null,
-          `  🔗 پروڈکٹ: ${shareUrl}`,
-          item.productImageUrl ? `  🖼 تصویر: ${item.productImageUrl}` : null,
+          variants ? `  ${wa.variants}: ${variants}` : null,
+          addons ? `  ${wa.addons}: ${addons}` : null,
+          item.customMessage ? `  ${wa.message}: "${item.customMessage}"` : null,
+          `  🔗 ${wa.product}: ${shareUrl}`,
+          item.productImageUrl ? `  🖼 ${wa.image}: ${item.productImageUrl}` : null,
         ].filter(Boolean).join("\n");
       }),
       "",
-      `*Subtotal:* ${formatCurrency(subtotal)}`,
-      appliedCoupon ? `*Discount (${appliedCoupon.code}):* -${formatCurrency(discount)}` : null,
-      `*ڈیلیوری چارجز:* ${formatCurrency(DELIVERY_CHARGES)}`,
-      `*کل رقم:* ${formatCurrency(grandTotal)}`,
+      `*${wa.subtotal}:* ${formatCurrency(subtotal)}`,
+      appliedCoupon ? `*${wa.discount(appliedCoupon.code)}:* -${formatCurrency(discount)}` : null,
+      `*${wa.delivery}:* ${formatCurrency(DELIVERY_CHARGES)}`,
+      `*${wa.total}:* ${formatCurrency(grandTotal)}`,
       "",
-      `*ڈیلیوری تاریخ:* ${data.deliveryDate}`,
-      data.deliveryTimeSlot ? `*وقت:* ${data.deliveryTimeSlot}` : null,
-      `*پتہ:* ${data.deliveryAddress}`,
-      data.notes ? `*نوٹ:* ${data.notes}` : null,
+      `*${wa.deliveryDate}:* ${data.deliveryDate}`,
+      data.deliveryTimeSlot ? `*${wa.time}:* ${data.deliveryTimeSlot}` : null,
+      `*${wa.address}:* ${data.deliveryAddress}`,
+      data.notes ? `*${wa.note}:* ${data.notes}` : null,
     ].filter(Boolean).join("\n");
     return lines;
   };
 
   const handlePlaceOrder = async (data: CheckoutForm) => {
     if (isDateDisabled(data.deliveryDate)) {
-      toast({ title: "تاریخ دستیاب نہیں", description: "کوئی اور تاریخ منتخب کریں۔", variant: "destructive" });
+      toast({ title: t.cart.dateUnavailable, description: t.cart.dateBlackout, variant: "destructive" });
       return;
     }
     if (capacity && !capacity.available) {
-      toast({ title: "یہ تاریخ بھری ہوئی ہے", description: "کوئی اور تاریخ منتخب کریں۔", variant: "destructive" });
+      toast({ title: t.cart.dateFull, variant: "destructive" });
       return;
     }
 
-    // Capture items before cart is cleared
     const currentItems = [...items];
-
-    // 1. Open WhatsApp immediately (must be in direct user-action context)
     const msg = generateWhatsappMessage(data, currentItems);
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, "_blank");
 
-    // 2. Show success screen right away — don't wait for DB
     setPlacedOrderData(data);
     setOrderPlaced(true);
     clearCart();
 
-    // 3. Save order to DB in background (admin dashboard will receive it)
     createOrder.mutate({
       data: {
         ...data,
@@ -197,6 +197,8 @@ export default function CartPage() {
     });
   };
 
+  const BackArrow = isUrdu ? ArrowRight : ArrowLeft;
+
   // Success screen
   if (orderPlaced) {
     return (
@@ -205,19 +207,19 @@ export default function CartPage() {
           <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-2xl font-serif font-bold mb-2">آرڈر بھیج دیا گیا! 🎉</h1>
-          <p className="text-muted-foreground mb-2">آپ کا آرڈر WhatsApp پر بھیج دیا گیا ہے۔</p>
+          <h1 className="text-2xl font-serif font-bold mb-2">{t.cart.orderPlaced}</h1>
+          <p className="text-muted-foreground mb-2">{t.cart.orderSentDesc}</p>
           {placedOrderData && (
             <div className="bg-muted rounded-xl p-4 text-sm text-left mb-6 space-y-1">
-              <p><span className="text-muted-foreground">نام:</span> <strong>{placedOrderData.customerName}</strong></p>
-              <p><span className="text-muted-foreground">ڈیلیوری:</span> <strong>{placedOrderData.deliveryDate}</strong></p>
-              <p><span className="text-muted-foreground">رقم:</span> <strong className="text-primary">{formatCurrency(grandTotal)}</strong></p>
+              <p><span className="text-muted-foreground">{t.cart.name}:</span> <strong>{placedOrderData.customerName}</strong></p>
+              <p><span className="text-muted-foreground">{t.cart.date}:</span> <strong>{placedOrderData.deliveryDate}</strong></p>
+              <p><span className="text-muted-foreground">{t.cart.total}:</span> <strong className="text-primary">{formatCurrency(grandTotal)}</strong></p>
             </div>
           )}
-          <p className="text-xs text-muted-foreground mb-6">ہم جلد ہی آرڈر confirm کریں گے۔</p>
+          <p className="text-xs text-muted-foreground mb-6">{t.cart.confirmSoon}</p>
           <div className="flex gap-3 justify-center">
-            <Link href="/shop"><Button size="lg">مزید خریداری کریں</Button></Link>
-            <Link href="/"><Button size="lg" variant="outline">گھر جائیں</Button></Link>
+            <Link href="/shop"><Button size="lg">{t.cart.continueShopping}</Button></Link>
+            <Link href="/"><Button size="lg" variant="outline">{t.cart.goHome}</Button></Link>
           </div>
         </div>
       </StorefrontLayout>
@@ -230,13 +232,15 @@ export default function CartPage() {
       <StorefrontLayout>
         <div className="max-w-lg mx-auto px-4 py-20 text-center">
           <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
-          <h1 className="text-2xl font-serif font-bold mb-3">کارٹ خالی ہے</h1>
-          <p className="text-muted-foreground mb-6">کوئی آئٹم شامل کریں اور آرڈر کریں۔</p>
-          <Link href="/shop"><Button size="lg">شاپ کریں</Button></Link>
+          <h1 className="text-2xl font-serif font-bold mb-3">{t.cart.emptyCart}</h1>
+          <p className="text-muted-foreground mb-6">{t.cart.emptyCartDesc}</p>
+          <Link href="/shop"><Button size="lg">{t.cart.shopNow}</Button></Link>
         </div>
       </StorefrontLayout>
     );
   }
+
+  const STEPS = t.cart.steps;
 
   return (
     <StorefrontLayout>
@@ -245,14 +249,14 @@ export default function CartPage() {
         <div className="flex items-center gap-4 mb-6">
           {step > 0 ? (
             <button onClick={() => setStep((s) => (s - 1) as 0 | 1 | 2)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" /> پیچھے
+              <BackArrow className="h-4 w-4" /> {t.cart.back}
             </button>
           ) : (
             <button onClick={() => navigate("/shop")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" /> شاپ
+              <BackArrow className="h-4 w-4" /> {t.cart.backShop}
             </button>
           )}
-          <h1 className="text-2xl font-serif font-bold">آپ کا کارٹ</h1>
+          <h1 className="text-2xl font-serif font-bold">{t.cart.title}</h1>
         </div>
 
         {/* Step indicator */}
@@ -277,8 +281,8 @@ export default function CartPage() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center justify-between">
-                    <span>آپ کے آئٹمز ({items.length})</span>
-                    <button onClick={clearCart} className="text-xs text-muted-foreground hover:text-destructive transition-colors">سب ہٹائیں</button>
+                    <span>{t.cart.yourItems(items.length)}</span>
+                    <button onClick={clearCart} className="text-xs text-muted-foreground hover:text-destructive transition-colors">{t.cart.removeAll}</button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 divide-y divide-border">
@@ -301,7 +305,7 @@ export default function CartPage() {
                           </p>
                         )}
                         {item.selectedAddons.length > 0 && (
-                          <p className="text-xs text-muted-foreground">Add-ons: {item.selectedAddons.join(", ")}</p>
+                          <p className="text-xs text-muted-foreground">{t.cart.addons}: {item.selectedAddons.join(", ")}</p>
                         )}
                         {item.customMessage && (
                           <p className="text-xs text-muted-foreground italic">"{item.customMessage}"</p>
@@ -318,12 +322,7 @@ export default function CartPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-sm text-primary">{formatCurrency(item.subtotal)}</span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => removeItem(i)}
-                            >
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeItem(i)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -338,22 +337,22 @@ export default function CartPage() {
             {/* STEP 1: Delivery details form */}
             {step === 1 && (
               <Card>
-                <CardHeader><CardTitle className="text-lg">ڈیلیوری کی تفصیلات</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">{t.cart.deliveryDetails}</CardTitle></CardHeader>
                 <CardContent>
                   <Form {...form}>
                     <form id="checkout-form" onSubmit={form.handleSubmit(handlePlaceOrder)} className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FormField control={form.control} name="customerName" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>مکمل نام *</FormLabel>
-                            <FormControl><Input placeholder="آپ کا نام" {...field} /></FormControl>
+                            <FormLabel>{t.cart.fullName}</FormLabel>
+                            <FormControl><Input placeholder={t.cart.namePlaceholder} {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="customerPhone" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>فون نمبر *</FormLabel>
-                            <FormControl><Input placeholder="+92 300 0000000" {...field} /></FormControl>
+                            <FormLabel>{t.cart.phone}</FormLabel>
+                            <FormControl><Input placeholder={t.cart.phonePlaceholder} {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
@@ -361,16 +360,16 @@ export default function CartPage() {
 
                       <FormField control={form.control} name="customerEmail" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>ای میل (اختیاری)</FormLabel>
-                          <FormControl><Input type="email" placeholder="you@example.com" {...field} /></FormControl>
+                          <FormLabel>{t.cart.email}</FormLabel>
+                          <FormControl><Input type="email" placeholder={t.cart.emailPlaceholder} {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
 
                       <FormField control={form.control} name="deliveryAddress" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>ڈیلیوری پتہ *</FormLabel>
-                          <FormControl><Textarea placeholder="مکمل پتہ درج کریں" rows={2} {...field} /></FormControl>
+                          <FormLabel>{t.cart.deliveryAddress}</FormLabel>
+                          <FormControl><Textarea placeholder={t.cart.addressPlaceholder} rows={2} {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
@@ -378,7 +377,7 @@ export default function CartPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FormField control={form.control} name="deliveryDate" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>ڈیلیوری تاریخ *</FormLabel>
+                            <FormLabel>{t.cart.deliveryDate}</FormLabel>
                             <FormControl>
                               <Input
                                 type="date"
@@ -387,7 +386,7 @@ export default function CartPage() {
                                 onChange={(e) => {
                                   field.onChange(e);
                                   if (blackoutSet.has(e.target.value)) {
-                                    toast({ title: "یہ تاریخ دستیاب نہیں", description: "یہ blackout date ہے۔", variant: "destructive" });
+                                    toast({ title: t.cart.dateUnavailable, description: t.cart.dateBlackout, variant: "destructive" });
                                   }
                                 }}
                               />
@@ -396,13 +395,13 @@ export default function CartPage() {
                             {selectedDate && capacity && !capacity.available && (
                               <p className="text-xs text-destructive flex items-center gap-1 mt-1">
                                 <AlertCircle className="h-3 w-3" />
-                                {capacity.isBlackout ? "یہ تاریخ blackout ہے" : "یہ تاریخ بھری ہوئی ہے"}
+                                {capacity.isBlackout ? t.cart.dateBlackout : t.cart.dateFull}
                               </p>
                             )}
                             {selectedDate && capacity?.available && (
                               <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                                 <CheckCircle2 className="h-3 w-3" />
-                                {capacity.remainingSlots} جگہیں باقی ہیں
+                                {t.cart.slotsRemaining(capacity.remainingSlots)}
                               </p>
                             )}
                           </FormItem>
@@ -410,13 +409,13 @@ export default function CartPage() {
 
                         <FormField control={form.control} name="deliveryTimeSlot" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>وقت کا سلاٹ (اختیاری)</FormLabel>
+                            <FormLabel>{t.cart.timeSlot}</FormLabel>
                             <FormControl>
                               <select
                                 {...field}
                                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               >
-                                <option value="">کوئی بھی وقت</option>
+                                <option value="">{t.cart.anyTime}</option>
                                 {TIME_SLOTS.map((slot) => (
                                   <option key={slot} value={slot}>{slot}</option>
                                 ))}
@@ -428,8 +427,8 @@ export default function CartPage() {
 
                       <FormField control={form.control} name="notes" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>خاص ہدایات (اختیاری)</FormLabel>
-                          <FormControl><Textarea placeholder="کوئی خاص ہدایت..." rows={2} {...field} /></FormControl>
+                          <FormLabel>{t.cart.notes}</FormLabel>
+                          <FormControl><Textarea placeholder={t.cart.notesPlaceholder} rows={2} {...field} /></FormControl>
                         </FormItem>
                       )} />
                     </form>
@@ -441,19 +440,19 @@ export default function CartPage() {
             {/* STEP 2: Confirm order */}
             {step === 2 && (
               <Card>
-                <CardHeader><CardTitle className="text-lg">آرڈر کی تصدیق</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-lg">{t.cart.orderReview}</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="bg-muted/50 rounded-xl p-4 space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">نام</span><span className="font-medium">{formValues.customerName}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">فون</span><span className="font-medium">{formValues.customerPhone}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">تاریخ</span><span className="font-medium">{formValues.deliveryDate}</span></div>
-                    {formValues.deliveryTimeSlot && <div className="flex justify-between"><span className="text-muted-foreground">وقت</span><span className="font-medium">{formValues.deliveryTimeSlot}</span></div>}
-                    <div className="flex justify-between"><span className="text-muted-foreground">پتہ</span><span className="font-medium text-right max-w-xs">{formValues.deliveryAddress}</span></div>
-                    {formValues.notes && <div className="flex justify-between"><span className="text-muted-foreground">نوٹ</span><span className="font-medium">{formValues.notes}</span></div>}
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.name}</span><span className="font-medium">{formValues.customerName}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.phone2}</span><span className="font-medium">{formValues.customerPhone}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.date}</span><span className="font-medium">{formValues.deliveryDate}</span></div>
+                    {formValues.deliveryTimeSlot && <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.time}</span><span className="font-medium">{formValues.deliveryTimeSlot}</span></div>}
+                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.address}</span><span className="font-medium text-right max-w-xs">{formValues.deliveryAddress}</span></div>
+                    {formValues.notes && <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.note}</span><span className="font-medium">{formValues.notes}</span></div>}
                   </div>
 
                   <div>
-                    <p className="text-sm font-semibold mb-2">آرڈر آئٹمز</p>
+                    <p className="text-sm font-semibold mb-2">{t.cart.orderItems}</p>
                     <div className="space-y-1.5">
                       {items.map((item, i) => (
                         <div key={i} className="flex justify-between text-sm">
@@ -466,12 +465,12 @@ export default function CartPage() {
 
                   <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm">
                     <Clock className="h-4 w-4 text-blue-600 shrink-0" />
-                    <p className="text-blue-700 dark:text-blue-400">کم از کم 24 گھنٹے پہلے آرڈر ضروری ہے۔</p>
+                    <p className="text-blue-700 dark:text-blue-400">{t.cart.leadTime}</p>
                   </div>
 
                   <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm">
                     <MessageCircle className="h-4 w-4 text-green-600 shrink-0" />
-                    <p className="text-green-700 dark:text-green-400">"WhatsApp پر بھیجیں" بٹن دبانے پر آرڈر WhatsApp میں کھل جائے گا۔</p>
+                    <p className="text-green-700 dark:text-green-400">{t.cart.whatsappNote}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -481,7 +480,7 @@ export default function CartPage() {
           {/* Right: Order summary (always visible) */}
           <div className="space-y-4">
             <Card className="sticky top-20">
-              <CardHeader><CardTitle className="text-lg">آرڈر خلاصہ</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">{t.cart.orderSummary}</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2 text-sm">
                   {items.map((item, i) => (
@@ -491,7 +490,7 @@ export default function CartPage() {
                     </div>
                   ))}
                   <Separator />
-                  <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.subtotal}</span><span>{formatCurrency(subtotal)}</span></div>
                   {appliedCoupon && (
                     <div className="flex justify-between text-green-600">
                       <span className="flex items-center gap-1">
@@ -502,20 +501,20 @@ export default function CartPage() {
                     </div>
                   )}
                   <div className="flex justify-between text-muted-foreground text-xs">
-                    <span className="flex items-center gap-1">🚚 ڈیلیوری چارجز</span>
+                    <span className="flex items-center gap-1">🚚 {t.cart.deliveryCharges}</span>
                     <span>{formatCurrency(DELIVERY_CHARGES)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-base">
-                    <span>کل رقم</span>
+                    <span>{t.cart.total}</span>
                     <span className="text-primary">{formatCurrency(grandTotal)}</span>
                   </div>
                 </div>
 
-                {/* Coupon — show on step 0 & 1 */}
+                {/* Coupon */}
                 {step < 2 && (
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">کوپن کوڈ</Label>
+                    <Label className="text-sm font-medium">{t.cart.couponCode}</Label>
                     <div className="flex gap-2">
                       <Input
                         placeholder="SAVE10"
@@ -526,7 +525,7 @@ export default function CartPage() {
                       />
                       {appliedCoupon ? (
                         <Button variant="outline" size="sm" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>
-                          ہٹائیں
+                          {t.cart.remove}
                         </Button>
                       ) : (
                         <Button
@@ -535,14 +534,14 @@ export default function CartPage() {
                           onClick={() => validateCoupon.mutate({ data: { code: couponCode, orderAmount: subtotal } })}
                           disabled={!couponCode || validateCoupon.isPending}
                         >
-                          لگائیں
+                          {t.cart.apply}
                         </Button>
                       )}
                     </div>
                     {appliedCoupon && (
                       <p className="text-xs text-green-600 flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" />
-                        <Badge variant="outline" className="text-green-600 border-green-300 text-xs">{appliedCoupon.code}</Badge> لگایا گیا!
+                        <Badge variant="outline" className="text-green-600 border-green-300 text-xs">{appliedCoupon.code}</Badge> {t.cart.couponApplied}
                       </p>
                     )}
                   </div>
@@ -550,12 +549,9 @@ export default function CartPage() {
 
                 {/* Step CTA buttons */}
                 {step === 0 && (
-                  <Button
-                    className="w-full gap-2"
-                    size="lg"
-                    onClick={() => setStep(1)}
-                  >
-                    اگلا مرحلہ →
+                  <Button className="w-full gap-2" size="lg" onClick={() => setStep(1)}>
+                    {t.cart.nextStep}
+                    {!isUrdu && <ArrowRight className="h-4 w-4" />}
                   </Button>
                 )}
 
@@ -567,18 +563,19 @@ export default function CartPage() {
                       const valid = await form.trigger();
                       if (valid) {
                         if (isDateDisabled(formValues.deliveryDate)) {
-                          toast({ title: "تاریخ دستیاب نہیں", variant: "destructive" });
+                          toast({ title: t.cart.dateUnavailable, variant: "destructive" });
                           return;
                         }
                         if (capacity && !capacity.available) {
-                          toast({ title: "یہ تاریخ بھری ہوئی ہے", variant: "destructive" });
+                          toast({ title: t.cart.dateFull, variant: "destructive" });
                           return;
                         }
                         setStep(2);
                       }
                     }}
                   >
-                    آرڈر کا جائزہ لیں →
+                    {t.cart.reviewOrder}
+                    {!isUrdu && <ArrowRight className="h-4 w-4" />}
                   </Button>
                 )}
 
@@ -591,12 +588,12 @@ export default function CartPage() {
                     data-testid="button-checkout"
                   >
                     <MessageCircle className="h-5 w-5" />
-                    {createOrder.isPending ? "بھیجا جا رہا ہے..." : "WhatsApp پر آرڈر بھیجیں"}
+                    {createOrder.isPending ? t.cart.sending : t.cart.sendWhatsapp}
                   </Button>
                 )}
 
                 <p className="text-xs text-center text-muted-foreground">
-                  آرڈر WhatsApp میں کھل جائے گا — confirm کریں اور بھیج دیں۔
+                  {t.cart.whatsappFooter}
                 </p>
               </CardContent>
             </Card>

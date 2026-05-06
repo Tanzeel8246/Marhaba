@@ -2,6 +2,21 @@
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
+/* Urdu Nastaliq font applied globally when lang-ur class is on <html> */
+html.lang-ur body,
+html.lang-ur input,
+html.lang-ur textarea,
+html.lang-ur select,
+html.lang-ur button {
+  font-family: 'Noto Nastaliq Urdu', 'Jamil Noori Nastaliq', serif;
+  line-height: 1.9;
+}
+
+/* Keep Inter for English / admin */
+html:not(.lang-ur) body {
+  font-family: 'Inter', sans-serif;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

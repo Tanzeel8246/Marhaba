@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ShoppingBag, MapPin, Phone, Clock, Award, Heart, Truck, Star } from "lucide-react";
+import { ArrowRight, ArrowLeft, ShoppingBag, MapPin, Phone, Clock, Award, Heart, Truck, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/currency";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function BannerCarousel() {
   const { data: banners, isLoading } = useListBanners();
   const [current, setCurrent] = useState(0);
+  const { t, isUrdu } = useLanguage();
   const activeBanners = banners?.filter((b) => b.isActive) ?? [];
 
   useEffect(() => {
@@ -29,17 +31,18 @@ function BannerCarousel() {
           style={{ backgroundImage: "radial-gradient(circle at 25% 25%, #f59e0b 0%, transparent 50%), radial-gradient(circle at 75% 75%, #ec4899 0%, transparent 50%)" }} />
         <div className="text-center px-8 relative z-10">
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-            <Heart className="h-4 w-4 fill-primary" /> محبت سے تیار کردہ
+            <Heart className="h-4 w-4 fill-primary" /> {t.home.heroBadge}
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-foreground leading-tight mb-4" dir="rtl">
-            مرحبا سویٹس اینڈ بیکرز
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-foreground leading-tight mb-4">
+            {t.home.heroTitle}
           </h1>
-          <p className="text-muted-foreground text-lg mb-8 max-w-lg mx-auto" dir="rtl">
-            روایتی ذائقہ، جدید انداز — تازہ مٹھائی اور بیکری آئٹمز آپ کے دروازے تک
+          <p className="text-muted-foreground text-lg mb-8 max-w-lg mx-auto">
+            {t.home.heroSubtitle}
           </p>
           <Link href="/shop">
             <Button size="lg" className="gap-2 text-base px-8 rounded-full shadow-lg">
-              ابھی آرڈر کریں <ArrowRight className="h-4 w-4" />
+              {t.home.heroBtn}
+              {isUrdu ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
             </Button>
           </Link>
         </div>
@@ -56,16 +59,17 @@ function BannerCarousel() {
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
-      <div className="absolute inset-0 flex items-center p-10 sm:p-16">
+      <div className={`absolute inset-0 flex items-center p-10 sm:p-16 ${isUrdu ? "justify-end" : "justify-start"}`}>
         <div className="text-white max-w-lg">
           <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-sm font-medium mb-5">
-            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> تازہ اور لذیذ
+            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> {t.home.heroBadge}
           </div>
           <h2 className="text-3xl sm:text-5xl font-serif font-bold mb-3 leading-tight">{banner.title}</h2>
           {banner.subtitle && <p className="text-white/85 text-base sm:text-lg mb-7 leading-relaxed">{banner.subtitle}</p>}
           <Link href={banner.linkUrl ?? "/shop"}>
             <Button size="lg" className="gap-2 rounded-full bg-white text-foreground hover:bg-white/90 shadow-lg font-semibold">
-              ابھی دیکھیں <ArrowRight className="h-4 w-4" />
+              {t.home.viewBtn}
+              {isUrdu ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
             </Button>
           </Link>
         </div>
@@ -83,15 +87,11 @@ function BannerCarousel() {
   );
 }
 
-const FEATURES = [
-  { icon: Award, title: "معیاری اجزاء", desc: "صرف تازہ اور خالص اجزاء استعمال کیے جاتے ہیں" },
-  { icon: Heart, title: "محبت سے تیار", desc: "ہر آئٹم ہاتھ سے بنایا جاتا ہے، مشینی نہیں" },
-  { icon: Truck, title: "گھر تک ڈیلیوری", desc: "صرف 300 روپے میں آپ کے دروازے تک" },
-  { icon: Clock, title: "وقت پر ڈیلیوری", desc: "آرڈر پر 24 گھنٹے میں تیاری کی ضمانت" },
-];
+const FEATURE_ICONS = [Award, Heart, Truck, Clock];
 
 function ProductCard({ product }: { product: { id: number; name: string; basePrice: string | number; imageUrls: unknown; description?: string | null; isAvailable: boolean } }) {
   const images = (product.imageUrls as string[]) ?? [];
+  const { t } = useLanguage();
   return (
     <Link href={`/products/${product.id}`}>
       <Card className="overflow-hidden group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 border-0 shadow-md">
@@ -105,19 +105,19 @@ function ProductCard({ product }: { product: { id: number; name: string; basePri
           )}
           {!product.isAvailable && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <Badge variant="secondary" className="text-sm">دستیاب نہیں</Badge>
+              <Badge variant="secondary" className="text-sm">{t.shop.soldOut}</Badge>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
         <CardContent className="p-4">
-          <h3 className="font-bold text-sm sm:text-base leading-tight mb-1.5 group-hover:text-primary transition-colors line-clamp-1" dir="rtl">{product.name}</h3>
+          <h3 className="font-bold text-sm sm:text-base leading-tight mb-1.5 group-hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
           {product.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2.5 leading-relaxed" dir="rtl">{product.description}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2.5 leading-relaxed">{product.description}</p>
           )}
           <div className="flex items-center justify-between">
-            <p className="font-bold text-primary text-sm">{formatCurrency(Number(product.basePrice))} سے</p>
-            <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">آرڈر کریں</span>
+            <p className="font-bold text-primary text-sm">{formatCurrency(Number(product.basePrice))} {t.home.from}</p>
+            <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">{t.home.orderNow}</span>
           </div>
         </CardContent>
       </Card>
@@ -128,6 +128,7 @@ function ProductCard({ product }: { product: { id: number; name: string; basePri
 export default function HomePage() {
   const { data: popular, isLoading: loadingPopular } = useListPopularProducts();
   const { data: categories, isLoading: loadingCats } = useListCategories();
+  const { t, isUrdu } = useLanguage();
 
   return (
     <StorefrontLayout>
@@ -139,19 +140,22 @@ export default function HomePage() {
         {/* Features / Why Us */}
         <section>
           <div className="text-center mb-10">
-            <p className="text-primary font-medium text-sm uppercase tracking-widest mb-2">ہمیں کیوں منتخب کریں</p>
-            <h2 className="text-3xl font-serif font-bold" dir="rtl">ہماری خصوصیات</h2>
+            <p className="text-primary font-medium text-sm uppercase tracking-widest mb-2">{t.home.whySubtitle}</p>
+            <h2 className="text-3xl font-serif font-bold">{t.home.whyTitle}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="text-center p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors">
-                  <Icon className="h-7 w-7 text-primary" />
+            {t.home.features.map(({ title, desc }, idx) => {
+              const Icon = FEATURE_ICONS[idx];
+              return (
+                <div key={title} className="text-center p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors">
+                    <Icon className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-base mb-2">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
                 </div>
-                <h3 className="font-bold text-base mb-2" dir="rtl">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed" dir="rtl">{desc}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -159,8 +163,8 @@ export default function HomePage() {
         <section>
           <div className="flex items-end justify-between mb-8">
             <div>
-              <p className="text-primary font-medium text-sm uppercase tracking-widest mb-1">Browse</p>
-              <h2 className="text-3xl font-serif font-bold" dir="rtl">قسم کے مطابق خریدیں</h2>
+              <p className="text-primary font-medium text-sm uppercase tracking-widest mb-1">{t.home.categoriesSubtitle}</p>
+              <h2 className="text-3xl font-serif font-bold">{t.home.categoriesTitle}</h2>
             </div>
           </div>
           {loadingCats ? (
@@ -170,11 +174,11 @@ export default function HomePage() {
           ) : (
             <div className="flex flex-wrap gap-3">
               <Link href="/shop">
-                <Button variant="default" className="rounded-full px-6 shadow-sm">🛍️ تمام آئٹمز</Button>
+                <Button variant="default" className="rounded-full px-6 shadow-sm">🛍️ {t.home.allItems}</Button>
               </Link>
               {categories?.map((cat) => (
                 <Link key={cat.id} href={`/shop?categoryId=${cat.id}`}>
-                  <Button variant="outline" className="rounded-full px-6 hover:border-primary hover:text-primary transition-colors" dir="rtl">
+                  <Button variant="outline" className="rounded-full px-6 hover:border-primary hover:text-primary transition-colors">
                     {cat.name}
                   </Button>
                 </Link>
@@ -187,12 +191,13 @@ export default function HomePage() {
         <section>
           <div className="flex items-end justify-between mb-8">
             <div>
-              <p className="text-primary font-medium text-sm uppercase tracking-widest mb-1">Best Sellers</p>
-              <h2 className="text-3xl font-serif font-bold" dir="rtl">مشہور ترین آئٹمز</h2>
+              <p className="text-primary font-medium text-sm uppercase tracking-widest mb-1">{t.home.popularSubtitle}</p>
+              <h2 className="text-3xl font-serif font-bold">{t.home.popularTitle}</h2>
             </div>
             <Link href="/shop">
               <Button variant="ghost" className="gap-2 text-primary font-semibold hidden sm:flex">
-                سب دیکھیں <ArrowRight className="h-4 w-4" />
+                {t.home.viewAll}
+                {isUrdu ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
               </Button>
             </Link>
           </div>
@@ -209,7 +214,7 @@ export default function HomePage() {
           ) : !popular?.length ? (
             <div className="text-center py-20 text-muted-foreground">
               <ShoppingBag className="h-16 w-16 mx-auto mb-4 opacity-20" />
-              <p className="text-lg" dir="rtl">ابھی کوئی پروڈکٹ نہیں — جلد آ رہا ہے!</p>
+              <p className="text-lg">{t.home.noProducts}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
@@ -218,7 +223,10 @@ export default function HomePage() {
           )}
           <div className="text-center mt-8 sm:hidden">
             <Link href="/shop">
-              <Button variant="outline" className="gap-2 rounded-full px-8">سب دیکھیں <ArrowRight className="h-4 w-4" /></Button>
+              <Button variant="outline" className="gap-2 rounded-full px-8">
+                {t.home.viewAll}
+                {isUrdu ? <ArrowLeft className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+              </Button>
             </Link>
           </div>
         </section>
@@ -231,10 +239,8 @@ export default function HomePage() {
                 <MapPin className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-lg mb-1.5" dir="rtl">ہماری لوکیشن</h3>
-                <p className="text-muted-foreground leading-relaxed" dir="rtl">
-                  مین روڈ فروکہ<br />تحصیل ساہیوال، ضلع سرگودھا
-                </p>
+                <h3 className="font-bold text-lg mb-1.5">{t.home.locationTitle}</h3>
+                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">{t.footer.address}</p>
               </div>
             </div>
           </div>
@@ -244,13 +250,12 @@ export default function HomePage() {
                 <Phone className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h3 className="font-bold text-lg mb-1.5" dir="rtl">آرڈر کا طریقہ</h3>
-                <p className="text-muted-foreground leading-relaxed mb-4" dir="rtl">
-                  WhatsApp پر آرڈر کریں — 24 گھنٹے سروس<br />ڈیلیوری چارجز: صرف 300 روپے
-                </p>
+                <h3 className="font-bold text-lg mb-1.5">{t.home.orderTitle}</h3>
+                <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">{t.home.orderDesc}</p>
                 <Link href="/shop">
                   <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700 text-white rounded-full px-5">
-                    ابھی آرڈر کریں <ArrowRight className="h-3.5 w-3.5" />
+                    {t.home.orderBtn}
+                    {isUrdu ? <ArrowLeft className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}
                   </Button>
                 </Link>
               </div>
@@ -263,16 +268,13 @@ export default function HomePage() {
           <div className="absolute inset-0 opacity-10"
             style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 40%)" }} />
           <div className="relative z-10">
-            <p className="text-white/70 text-sm uppercase tracking-widest mb-3 font-medium">خاص موقعوں کے لیے</p>
-            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4 leading-tight" dir="rtl">
-              کسٹم آرڈر بھی قبول کیے جاتے ہیں
-            </h2>
-            <p className="text-white/80 mb-8 max-w-lg mx-auto text-base leading-relaxed" dir="rtl">
-              شادی، سالگرہ، عقیقہ یا کوئی بھی خاص موقع — ہم آپ کی پسند کی مٹھائی اور کیک تیار کریں گے۔
-            </p>
+            <p className="text-white/70 text-sm uppercase tracking-widest mb-3 font-medium">{t.home.ctaBadge}</p>
+            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4 leading-tight">{t.home.ctaTitle}</h2>
+            <p className="text-white/80 mb-8 max-w-lg mx-auto text-base leading-relaxed">{t.home.ctaDesc}</p>
             <Link href="/shop">
               <Button size="lg" variant="secondary" className="gap-2 rounded-full px-10 font-bold text-base shadow-lg hover:shadow-xl transition-all">
-                ابھی آرڈر شروع کریں <ArrowRight className="h-5 w-5" />
+                {t.home.ctaBtn}
+                {isUrdu ? <ArrowLeft className="h-5 w-5" /> : <ArrowRight className="h-5 w-5" />}
               </Button>
             </Link>
           </div>
