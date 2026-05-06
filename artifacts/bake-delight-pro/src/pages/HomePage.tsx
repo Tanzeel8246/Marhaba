@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ShoppingBag } from "lucide-react";
+import { ArrowRight, ShoppingBag, MapPin, Phone, Clock, Award, Heart, Truck, Star } from "lucide-react";
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/currency";
 
@@ -16,28 +16,30 @@ function BannerCarousel() {
 
   useEffect(() => {
     if (activeBanners.length <= 1) return;
-    const timer = setInterval(() => setCurrent((c) => (c + 1) % activeBanners.length), 4000);
+    const timer = setInterval(() => setCurrent((c) => (c + 1) % activeBanners.length), 5000);
     return () => clearInterval(timer);
   }, [activeBanners.length]);
 
-  if (isLoading) {
-    return <Skeleton className="w-full h-[420px] rounded-2xl" />;
-  }
+  if (isLoading) return <Skeleton className="w-full h-[480px] rounded-3xl" />;
 
   if (!activeBanners.length) {
     return (
-      <div className="relative w-full h-[420px] rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 via-secondary/30 to-accent/40 flex items-center justify-center">
-        <div className="text-center px-8">
-          <p className="text-xs uppercase tracking-widest text-primary/70 font-medium mb-3">Handcrafted with love</p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-foreground leading-tight mb-4">
-            Fresh from the Oven
+      <div className="relative w-full h-[480px] rounded-3xl overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-rose-950/30 flex items-center justify-center">
+        <div className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: "radial-gradient(circle at 25% 25%, #f59e0b 0%, transparent 50%), radial-gradient(circle at 75% 75%, #ec4899 0%, transparent 50%)" }} />
+        <div className="text-center px-8 relative z-10">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+            <Heart className="h-4 w-4 fill-primary" /> محبت سے تیار کردہ
+          </div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-foreground leading-tight mb-4" dir="rtl">
+            مرحبا سویٹس اینڈ بیکرز
           </h1>
-          <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-            Custom cakes, artisan cookies, and seasonal pastries — made to order, delivered to your door.
+          <p className="text-muted-foreground text-lg mb-8 max-w-lg mx-auto" dir="rtl">
+            روایتی ذائقہ، جدید انداز — تازہ مٹھائی اور بیکری آئٹمز آپ کے دروازے تک
           </p>
           <Link href="/shop">
-            <Button size="lg" className="gap-2 text-base px-8">
-              Shop Now <ArrowRight className="h-4 w-4" />
+            <Button size="lg" className="gap-2 text-base px-8 rounded-full shadow-lg">
+              ابھی آرڈر کریں <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
@@ -47,28 +49,32 @@ function BannerCarousel() {
 
   const banner = activeBanners[current];
   return (
-    <div className="relative w-full h-[420px] rounded-2xl overflow-hidden group">
+    <div className="relative w-full h-[480px] rounded-3xl overflow-hidden group shadow-2xl">
       <img
         src={banner.imageUrl}
         alt={banner.title}
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex items-center p-10">
-        <div className="text-white max-w-md">
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold mb-2">{banner.title}</h2>
-          {banner.subtitle && <p className="text-white/80 text-lg mb-6">{banner.subtitle}</p>}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+      <div className="absolute inset-0 flex items-center p-10 sm:p-16">
+        <div className="text-white max-w-lg">
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-sm font-medium mb-5">
+            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" /> تازہ اور لذیذ
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-serif font-bold mb-3 leading-tight">{banner.title}</h2>
+          {banner.subtitle && <p className="text-white/85 text-base sm:text-lg mb-7 leading-relaxed">{banner.subtitle}</p>}
           <Link href={banner.linkUrl ?? "/shop"}>
-            <Button size="lg" variant="secondary" className="gap-2">Shop Now <ArrowRight className="h-4 w-4" /></Button>
+            <Button size="lg" className="gap-2 rounded-full bg-white text-foreground hover:bg-white/90 shadow-lg font-semibold">
+              ابھی دیکھیں <ArrowRight className="h-4 w-4" />
+            </Button>
           </Link>
         </div>
       </div>
       {activeBanners.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
           {activeBanners.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrent(i)}
-              className={`w-2 h-2 rounded-full transition-all ${i === current ? "bg-white w-6" : "bg-white/50"}`}
+            <button key={i} onClick={() => setCurrent(i)}
+              className={`h-2 rounded-full transition-all duration-300 ${i === current ? "bg-white w-8" : "bg-white/50 w-2"}`}
             />
           ))}
         </div>
@@ -77,35 +83,42 @@ function BannerCarousel() {
   );
 }
 
+const FEATURES = [
+  { icon: Award, title: "معیاری اجزاء", desc: "صرف تازہ اور خالص اجزاء استعمال کیے جاتے ہیں" },
+  { icon: Heart, title: "محبت سے تیار", desc: "ہر آئٹم ہاتھ سے بنایا جاتا ہے، مشینی نہیں" },
+  { icon: Truck, title: "گھر تک ڈیلیوری", desc: "صرف 300 روپے میں آپ کے دروازے تک" },
+  { icon: Clock, title: "وقت پر ڈیلیوری", desc: "آرڈر پر 24 گھنٹے میں تیاری کی ضمانت" },
+];
+
 function ProductCard({ product }: { product: { id: number; name: string; basePrice: string | number; imageUrls: unknown; description?: string | null; isAvailable: boolean } }) {
   const images = (product.imageUrls as string[]) ?? [];
   return (
     <Link href={`/products/${product.id}`}>
-      <Card className="overflow-hidden group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+      <Card className="overflow-hidden group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 border-0 shadow-md">
         <div className="aspect-square overflow-hidden bg-muted relative">
           {images[0] ? (
-            <img
-              src={images[0]}
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
+            <img src={images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-secondary/30 to-accent/30">
-              <ShoppingBag className="h-16 w-16 text-muted-foreground/40" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-950/30 dark:to-orange-950/20">
+              <ShoppingBag className="h-16 w-16 text-muted-foreground/30" />
             </div>
           )}
           {!product.isAvailable && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Badge variant="secondary">Sold Out</Badge>
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <Badge variant="secondary" className="text-sm">دستیاب نہیں</Badge>
             </div>
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
         <CardContent className="p-4">
-          <h3 className="font-semibold text-sm sm:text-base leading-tight mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
+          <h3 className="font-bold text-sm sm:text-base leading-tight mb-1.5 group-hover:text-primary transition-colors line-clamp-1" dir="rtl">{product.name}</h3>
           {product.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{product.description}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2.5 leading-relaxed" dir="rtl">{product.description}</p>
           )}
-          <p className="font-bold text-primary">from {formatCurrency(Number(product.basePrice))}</p>
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-primary text-sm">{formatCurrency(Number(product.basePrice))} سے</p>
+            <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">آرڈر کریں</span>
+          </div>
         </CardContent>
       </Card>
     </Link>
@@ -118,70 +131,153 @@ export default function HomePage() {
 
   return (
     <StorefrontLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-20">
+
+        {/* Hero Banner */}
         <BannerCarousel />
+
+        {/* Features / Why Us */}
+        <section>
+          <div className="text-center mb-10">
+            <p className="text-primary font-medium text-sm uppercase tracking-widest mb-2">ہمیں کیوں منتخب کریں</p>
+            <h2 className="text-3xl font-serif font-bold" dir="rtl">ہماری خصوصیات</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="text-center p-6 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-lg transition-all duration-300 group">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4 group-hover:bg-primary/20 transition-colors">
+                  <Icon className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="font-bold text-base mb-2" dir="rtl">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed" dir="rtl">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Categories */}
         <section>
-          <h2 className="text-2xl font-serif font-bold mb-6">Shop by Category</h2>
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <p className="text-primary font-medium text-sm uppercase tracking-widest mb-1">Browse</p>
+              <h2 className="text-3xl font-serif font-bold" dir="rtl">قسم کے مطابق خریدیں</h2>
+            </div>
+          </div>
           {loadingCats ? (
-            <div className="flex gap-4 flex-wrap">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-32 rounded-full" />)}
+            <div className="flex gap-3 flex-wrap">
+              {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-11 w-36 rounded-full" />)}
             </div>
           ) : (
             <div className="flex flex-wrap gap-3">
               <Link href="/shop">
-                <Button variant="outline" className="rounded-full">All Items</Button>
+                <Button variant="default" className="rounded-full px-6 shadow-sm">🛍️ تمام آئٹمز</Button>
               </Link>
               {categories?.map((cat) => (
                 <Link key={cat.id} href={`/shop?categoryId=${cat.id}`}>
-                  <Button variant="outline" className="rounded-full">{cat.name}</Button>
+                  <Button variant="outline" className="rounded-full px-6 hover:border-primary hover:text-primary transition-colors" dir="rtl">
+                    {cat.name}
+                  </Button>
                 </Link>
               ))}
             </div>
           )}
         </section>
 
-        {/* Popular products */}
+        {/* Popular Products */}
         <section>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-serif font-bold">Most Loved Treats</h2>
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <p className="text-primary font-medium text-sm uppercase tracking-widest mb-1">Best Sellers</p>
+              <h2 className="text-3xl font-serif font-bold" dir="rtl">مشہور ترین آئٹمز</h2>
+            </div>
             <Link href="/shop">
-              <Button variant="ghost" className="gap-1 text-primary">View All <ArrowRight className="h-4 w-4" /></Button>
+              <Button variant="ghost" className="gap-2 text-primary font-semibold hidden sm:flex">
+                سب دیکھیں <ArrowRight className="h-4 w-4" />
+              </Button>
             </Link>
           </div>
           {loadingPopular ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="space-y-2">
-                  <Skeleton className="aspect-square rounded-xl" />
+                <div key={i} className="space-y-3">
+                  <Skeleton className="aspect-square rounded-2xl" />
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-4 w-1/2" />
                 </div>
               ))}
             </div>
           ) : !popular?.length ? (
-            <div className="text-center py-16 text-muted-foreground">
-              <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>No products yet — check back soon!</p>
+            <div className="text-center py-20 text-muted-foreground">
+              <ShoppingBag className="h-16 w-16 mx-auto mb-4 opacity-20" />
+              <p className="text-lg" dir="rtl">ابھی کوئی پروڈکٹ نہیں — جلد آ رہا ہے!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
               {popular.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
           )}
+          <div className="text-center mt-8 sm:hidden">
+            <Link href="/shop">
+              <Button variant="outline" className="gap-2 rounded-full px-8">سب دیکھیں <ArrowRight className="h-4 w-4" /></Button>
+            </Link>
+          </div>
         </section>
 
-        {/* CTA */}
-        <section className="bg-gradient-to-r from-primary/10 to-secondary/20 rounded-2xl p-8 sm:p-12 text-center">
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold mb-3">Custom Orders Welcome</h2>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            Birthdays, weddings, or just because — we craft personalized cakes and sweets for every occasion.
-          </p>
-          <Link href="/shop">
-            <Button size="lg" className="gap-2">Start Your Order <ArrowRight className="h-4 w-4" /></Button>
-          </Link>
+        {/* Location + Contact */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl p-8 border border-primary/10">
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center">
+                <MapPin className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg mb-1.5" dir="rtl">ہماری لوکیشن</h3>
+                <p className="text-muted-foreground leading-relaxed" dir="rtl">
+                  مین روڈ فروکہ<br />تحصیل ساہیوال، ضلع سرگودھا
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-3xl p-8 border border-green-200 dark:border-green-900">
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 w-12 h-12 rounded-2xl bg-green-500/15 flex items-center justify-center">
+                <Phone className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg mb-1.5" dir="rtl">آرڈر کا طریقہ</h3>
+                <p className="text-muted-foreground leading-relaxed mb-4" dir="rtl">
+                  WhatsApp پر آرڈر کریں — 24 گھنٹے سروس<br />ڈیلیوری چارجز: صرف 300 روپے
+                </p>
+                <Link href="/shop">
+                  <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700 text-white rounded-full px-5">
+                    ابھی آرڈر کریں <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
         </section>
+
+        {/* CTA Banner */}
+        <section className="relative overflow-hidden bg-gradient-to-r from-primary to-primary/80 rounded-3xl p-10 sm:p-16 text-center text-white shadow-2xl">
+          <div className="absolute inset-0 opacity-10"
+            style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 0%, transparent 50%), radial-gradient(circle at 80% 20%, white 0%, transparent 40%)" }} />
+          <div className="relative z-10">
+            <p className="text-white/70 text-sm uppercase tracking-widest mb-3 font-medium">خاص موقعوں کے لیے</p>
+            <h2 className="text-2xl sm:text-4xl font-serif font-bold mb-4 leading-tight" dir="rtl">
+              کسٹم آرڈر بھی قبول کیے جاتے ہیں
+            </h2>
+            <p className="text-white/80 mb-8 max-w-lg mx-auto text-base leading-relaxed" dir="rtl">
+              شادی، سالگرہ، عقیقہ یا کوئی بھی خاص موقع — ہم آپ کی پسند کی مٹھائی اور کیک تیار کریں گے۔
+            </p>
+            <Link href="/shop">
+              <Button size="lg" variant="secondary" className="gap-2 rounded-full px-10 font-bold text-base shadow-lg hover:shadow-xl transition-all">
+                ابھی آرڈر شروع کریں <ArrowRight className="h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
+        </section>
+
       </div>
     </StorefrontLayout>
   );

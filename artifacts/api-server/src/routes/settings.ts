@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   whatsappNumber: "923001234567",
   storeName: "مرحبا سویٹس اینڈ بیکرز",
   storeTagline: "Handcrafted with love. Order by WhatsApp.",
-  storeAddress: "Karachi, Pakistan",
+  storeAddress: "مین روڈ فروکہ، تحصیل ساہیوال، ضلع سرگودھا",
+  deliveryCharges: "300",
   minLeadHours: "24",
   dailyOrderLimit: "20",
 };
@@ -43,7 +44,7 @@ async function setSetting(key: string, value: string): Promise<void> {
 
 router.get("/settings/public", async (_req, res) => {
   try {
-    const keys = ["whatsappNumber", "storeName", "storeTagline", "storeAddress", "minLeadHours", "dailyOrderLimit"];
+    const keys = ["whatsappNumber", "storeName", "storeTagline", "storeAddress", "deliveryCharges", "minLeadHours", "dailyOrderLimit"];
     const settings: Record<string, string> = {};
     for (const key of keys) {
       settings[key] = await getSetting(key);

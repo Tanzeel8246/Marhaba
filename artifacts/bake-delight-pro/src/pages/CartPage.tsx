@@ -105,9 +105,10 @@ export default function CartPage() {
     },
   });
 
+  const DELIVERY_CHARGES = 300;
   const subtotal = total();
   const discount = appliedCoupon?.discountAmount ?? 0;
-  const grandTotal = subtotal - discount;
+  const grandTotal = subtotal - discount + DELIVERY_CHARGES;
   const minDate = format(addDays(new Date(), 1), "yyyy-MM-dd");
 
   const isDateDisabled = (dateStr: string) => {
@@ -143,6 +144,7 @@ export default function CartPage() {
       "",
       `*Subtotal:* ${formatCurrency(subtotal)}`,
       appliedCoupon ? `*Discount (${appliedCoupon.code}):* -${formatCurrency(discount)}` : null,
+      `*ڈیلیوری چارجز:* ${formatCurrency(DELIVERY_CHARGES)}`,
       `*کل رقم:* ${formatCurrency(grandTotal)}`,
       "",
       `*ڈیلیوری تاریخ:* ${data.deliveryDate}`,
@@ -499,6 +501,10 @@ export default function CartPage() {
                       <span>-{formatCurrency(discount)}</span>
                     </div>
                   )}
+                  <div className="flex justify-between text-muted-foreground text-xs">
+                    <span className="flex items-center gap-1">🚚 ڈیلیوری چارجز</span>
+                    <span>{formatCurrency(DELIVERY_CHARGES)}</span>
+                  </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-base">
                     <span>کل رقم</span>
