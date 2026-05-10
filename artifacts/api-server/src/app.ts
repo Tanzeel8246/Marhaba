@@ -28,9 +28,23 @@ app.use(
 );
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+import path from "path";
 
 app.use("/api", router);
+
+// Serve frontend static files in production
+if (process.env.NODE_ENV === "production") {
+  // Assuming the frontend build output is in artifacts/bake-delight-pro/dist
+  // and the server runs from artifacts/api-server
+  const frontendPath = path.join(__dirname, "..", "..", "bake-delight-pro", "dist");
+  app.use(express.static(frontendPath));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+}
 
 export default app;

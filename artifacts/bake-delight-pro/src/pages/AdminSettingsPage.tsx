@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Save, Phone, Store, Clock, Package } from "lucide-react";
+import { Settings, Save, Phone, Store, Clock, Package, Wallet, Landmark } from "lucide-react";
 
 interface StoreSettings {
   whatsappNumber: string;
@@ -17,6 +17,10 @@ interface StoreSettings {
   storeAddress: string;
   minLeadHours: string;
   dailyOrderLimit: string;
+  jazzcashDetails: string;
+  easypaisaDetails: string;
+  bankDetails: string;
+  deliveryCharges: string;
 }
 
 export default function AdminSettingsPage() {
@@ -24,18 +28,33 @@ export default function AdminSettingsPage() {
   const { data: session, isLoading: loadingSession } = useGetAdminMe();
   const { toast } = useToast();
   const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const [location] = useLocation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!loadingSession && !session?.authenticated) navigate("/admin/login");
-  }, [session, loadingSession]);
+    // Scroll main content to top on location change
+    const main = document.querySelector('main');
+    if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [session, loadingSession, location]);
 
   useEffect(() => {
     fetch("/api/admin/settings", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
-        setSettings(data);
+        setSettings({
+          whatsappNumber: data.whatsappNumber || "",
+          storeName: data.storeName || "",
+          storeTagline: data.storeTagline || "",
+          storeAddress: data.storeAddress || "",
+          minLeadHours: data.minLeadHours || "",
+          dailyOrderLimit: data.dailyOrderLimit || "",
+          jazzcashDetails: data.jazzcashDetails || "",
+          easypaisaDetails: data.easypaisaDetails || "",
+          bankDetails: data.bankDetails || "",
+          deliveryCharges: data.deliveryCharges || "300",
+        });
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -52,8 +71,21 @@ export default function AdminSettingsPage() {
         body: JSON.stringify(settings),
       });
       if (res.ok) {
-        const updated = await res.json();
-        setSettings(updated);
+        const data = await res.json();
+        console.log("Settings saved response:", data);
+        const mapped = {
+          whatsappNumber: data.whatsappNumber || "",
+          storeName: data.storeName || "",
+          storeTagline: data.storeTagline || "",
+          storeAddress: data.storeAddress || "",
+          minLeadHours: data.minLeadHours || "",
+          dailyOrderLimit: data.dailyOrderLimit || "",
+          jazzcashDetails: data.jazzcashDetails || "",
+          easypaisaDetails: data.easypaisaDetails || "",
+          bankDetails: data.bankDetails || "",
+          deliveryCharges: data.deliveryCharges || "300",
+        };
+        setSettings(mapped);
         toast({ title: "✅ Settings saved!", description: "Store settings updated successfully." });
       } else {
         toast({ title: "Error saving settings", variant: "destructive" });
@@ -184,6 +216,48 @@ export default function AdminSettingsPage() {
                     placeholder="20"
                   />
                   <p className="text-xs text-muted-foreground">ایک دن میں زیادہ سے زیادہ آرڈرز</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment Info */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-primary" /> پیمنٹ کی تفصیلات (Payment Details)
+                </CardTitle>
+                <CardDescription>یہ تفصیلات کسٹمر کو چیک آؤٹ کے وقت دکھائی جائیں گی۔</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-2 text-red-600">
+                    <div className="w-2 h-2 rounded-full bg-red-600" /> JazzCash Details
+                  </Label>
+                  <Input
+                    value={settings.jazzcashDetails || ""}
+                    onChange={(e) => update("jazzcashDetails", e.target.value)}
+                    placeholder="0300-1234567 (Ali Ahmed)"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-2 text-green-600">
+                    <div className="w-2 h-2 rounded-full bg-green-600" /> EasyPaisa Details
+                  </Label>
+                  <Input
+                    value={settings.easypaisaDetails || ""}
+                    onChange={(e) => update("easypaisaDetails", e.target.value)}
+                    placeholder="0321-7654321 (Ali Ahmed)"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-2 text-blue-600">
+                    <Landmark className="h-3.5 w-3.5" /> Bank Transfer (HBL/UBL etc)
+                  </Label>
+                  <Input
+                    value={settings.bankDetails || ""}
+                    onChange={(e) => update("bankDetails", e.target.value)}
+                    placeholder="HBL: 1234-5678-9012-3456 (Marhaba Bakers)"
+                  />
                 </div>
               </CardContent>
             </Card>

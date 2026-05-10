@@ -7,6 +7,7 @@ import bannersRouter from "./banners";
 import blackoutDatesRouter from "./blackout-dates";
 import couponsRouter from "./coupons";
 import adminRouter from "./admin";
+import authRouter from "./auth";
 import settingsRouter from "./settings";
 import shareRouter from "./share";
 
@@ -20,6 +21,7 @@ router.use(bannersRouter);
 router.use(blackoutDatesRouter);
 router.use(couponsRouter);
 router.use(adminRouter);
+router.use(authRouter);
 router.use(settingsRouter);
 router.use(shareRouter);
 

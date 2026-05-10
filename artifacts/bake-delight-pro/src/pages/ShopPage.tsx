@@ -3,44 +3,52 @@ import { Link, useLocation } from "wouter";
 import { useListProducts, useListCategories, getListProductsQueryKey } from "@workspace/api-client-react";
 import { StorefrontLayout } from "@/components/StorefrontLayout";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, X, ShoppingBag } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { motion } from "framer-motion";
 
 function ProductCard({ product }: { product: { id: number; name: string; basePrice: string | number; imageUrls: unknown; description?: string | null; isAvailable: boolean; category?: { name: string } | null } }) {
   const images = (product.imageUrls as string[]) ?? [];
   const { t } = useLanguage();
   return (
-    <Link href={`/products/${product.id}`}>
-      <Card className="overflow-hidden group cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 border-0 shadow-sm">
-        <div className="aspect-square overflow-hidden bg-muted relative">
-          {images[0] ? (
-            <img src={images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary/30 to-accent/30">
-              <ShoppingBag className="h-16 w-16 text-muted-foreground/30" />
-            </div>
-          )}
-          {!product.isAvailable && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-              <Badge variant="secondary">{t.shop.soldOut}</Badge>
-            </div>
-          )}
-          {product.category && (
-            <Badge className="absolute top-2 left-2 text-xs">{product.category.name}</Badge>
-          )}
+    <motion.div whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+      <Link href={`/products/${product.id}`} className="block h-full">
+        <div className="neu-flat rounded-[2rem] p-4 h-full flex flex-col group">
+          <div className="aspect-square neu-pressed rounded-[1.5rem] p-2 overflow-hidden mb-4 relative">
+            {images[0] ? (
+              <img src={images[0]} alt={product.name} className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-110" />
+            ) : (
+              <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
+                <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
+              </div>
+            )}
+            {!product.isAvailable && (
+              <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center backdrop-blur-[1px]">
+                <Badge variant="secondary" className="uppercase tracking-widest text-[10px] font-bold border-0 bg-white/90 text-black">{t.shop.soldOut}</Badge>
+              </div>
+            )}
+            {product.category && (
+              <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-[9px] uppercase tracking-widest font-bold text-foreground">
+                {product.category.name}
+              </div>
+            )}
+          </div>
+          
+          <h3 className="font-serif font-bold text-sm sm:text-base leading-tight mb-1 group-hover:text-primary transition-colors uppercase">{product.name}</h3>
+          {product.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{product.description}</p>}
+          
+          <div className="mt-auto pt-2 flex flex-col gap-3">
+            <p className="font-bold text-primary text-sm">{formatCurrency(Number(product.basePrice))} <span className="text-[10px] uppercase tracking-widest text-muted-foreground ml-1">{t.shop.from}</span></p>
+            <button className="w-full neu-flat rounded-full py-2.5 text-[10px] font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all">
+              {t.home.addToBag}
+            </button>
+          </div>
         </div>
-        <CardContent className="p-4">
-          <h3 className="font-semibold leading-tight mb-1 group-hover:text-primary transition-colors">{product.name}</h3>
-          {product.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{product.description}</p>}
-          <p className="font-bold text-primary">{formatCurrency(Number(product.basePrice))} {t.shop.from}</p>
-        </CardContent>
-      </Card>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -72,50 +80,52 @@ export default function ShopPage() {
 
   return (
     <StorefrontLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-serif font-bold mb-2">{t.shop.title}</h1>
-          <p className="text-muted-foreground">{t.shop.subtitle}</p>
+      <div className="px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="mb-10 text-center sm:text-start pl-2">
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-3 uppercase tracking-wide">{t.shop.title}</h1>
+          <p className="text-muted-foreground text-sm uppercase tracking-widest font-medium">{t.shop.subtitle}</p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-10">
           {/* Sidebar filters */}
-          <aside className="lg:w-52 shrink-0 space-y-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
+          <aside className="lg:w-64 shrink-0 space-y-8">
+            <div className="neu-pressed rounded-full p-1.5 relative flex items-center">
+              <Search className="absolute left-4 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
                 placeholder={t.shop.search}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="w-full bg-transparent border-0 focus:ring-0 pl-11 pr-10 py-2.5 text-sm outline-none placeholder:text-muted-foreground/60"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X className="h-4 w-4 text-muted-foreground" />
+                <button onClick={() => setSearch("")} className="absolute right-4 p-1 hover:text-foreground text-muted-foreground transition-colors">
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
-            <div>
-              <h3 className="text-sm font-semibold mb-3 uppercase tracking-widest text-muted-foreground">{t.shop.categories}</h3>
-              <div className="flex flex-row flex-wrap lg:flex-col gap-2">
-                <Button
-                  variant={!selectedCategory ? "default" : "ghost"}
-                  size="sm"
-                  className="justify-start"
+
+            <div className="neu-flat rounded-[2rem] p-6">
+              <h3 className="text-[10px] font-bold mb-4 uppercase tracking-widest text-muted-foreground">{t.shop.categories}</h3>
+              <div className="flex flex-row flex-wrap lg:flex-col gap-3">
+                <button
+                  className={`text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full transition-all text-start ${
+                    !selectedCategory ? "neu-pressed text-primary" : "neu-flat text-muted-foreground hover:text-foreground"
+                  }`}
                   onClick={() => setSelectedCategory(undefined)}
                 >
                   {t.shop.allItems}
-                </Button>
+                </button>
                 {categories?.map((cat) => (
-                  <Button
+                  <button
                     key={cat.id}
-                    variant={selectedCategory === cat.id ? "default" : "ghost"}
-                    size="sm"
-                    className="justify-start"
+                    className={`text-xs font-bold uppercase tracking-widest px-5 py-3 rounded-full transition-all text-start ${
+                      selectedCategory === cat.id ? "neu-pressed text-primary" : "neu-flat text-muted-foreground hover:text-foreground"
+                    }`}
                     onClick={() => setSelectedCategory(cat.id)}
                   >
                     {cat.name}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
@@ -124,25 +134,27 @@ export default function ShopPage() {
           {/* Products grid */}
           <div className="flex-1">
             {isLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="space-y-2">
-                    <Skeleton className="aspect-square rounded-xl" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
+                  <div key={i} className="neu-flat rounded-[2rem] p-4 space-y-4">
+                    <Skeleton className="aspect-square rounded-[1.5rem]" />
+                    <Skeleton className="h-4 w-3/4 mx-auto" />
+                    <Skeleton className="h-10 w-full rounded-full mt-4" />
                   </div>
                 ))}
               </div>
             ) : !products?.length ? (
-              <div className="text-center py-20 text-muted-foreground">
-                <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium mb-1">{t.shop.noItems}</p>
-                <p className="text-sm">{t.shop.noItemsHint}</p>
+              <div className="text-center py-24 neu-pressed rounded-[2.5rem] px-6">
+                <div className="w-20 h-20 mx-auto neu-flat rounded-full flex items-center justify-center mb-6">
+                  <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
+                </div>
+                <p className="text-xl font-serif font-bold uppercase tracking-wide mb-2">{t.shop.noItems}</p>
+                <p className="text-sm text-muted-foreground">{t.shop.noItemsHint}</p>
               </div>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground mb-4">{t.shop.itemCount(products.length)}</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-6 pl-2">{t.shop.itemCount(products.length)}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products.map((p) => <ProductCard key={p.id} product={p} />)}
                 </div>
               </>

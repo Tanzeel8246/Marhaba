@@ -1,9 +1,11 @@
 import { pgTable, serial, text, integer, boolean, numeric, jsonb, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const ordersTable = pgTable("orders", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => usersTable.id, { onDelete: "set null" }),
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
   customerEmail: text("customer_email"),
@@ -18,6 +20,9 @@ export const ordersTable = pgTable("orders", {
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
   couponCode: text("coupon_code"),
   whatsappMessageSent: boolean("whatsapp_message_sent").notNull().default(false),
+  paymentMethod: text("payment_method").notNull().default("cod"),
+  transactionId: text("transaction_id"),
+  paymentScreenshot: text("payment_screenshot"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

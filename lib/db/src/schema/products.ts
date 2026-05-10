@@ -18,6 +18,7 @@ export const productsTable = pgTable("products", {
   isVisible: boolean("is_visible").notNull().default(true),
   isAvailable: boolean("is_available").notNull().default(true),
   orderCount: integer("order_count").notNull().default(0),
+  leadTimeHours: integer("lead_time_hours").notNull().default(24),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -28,6 +29,11 @@ export const productsRelations = relations(productsTable, ({ one }) => ({
   }),
 }));
 
-export const insertProductSchema = createInsertSchema(productsTable).omit({ id: true, createdAt: true, orderCount: true });
+export const insertProductSchema = createInsertSchema(productsTable, {
+  imageUrls: z.any(),
+  variants: z.any(),
+  addons: z.any(),
+  basePrice: z.any(), // Allow numeric as string or number
+}).omit({ id: true, createdAt: true, orderCount: true });
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof productsTable.$inferSelect;

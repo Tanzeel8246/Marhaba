@@ -2,8 +2,32 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { productsTable, categoriesTable, insertProductSchema } from "@workspace/db";
 import { eq, ilike, and, desc } from "drizzle-orm";
+import fs from "fs";
+import path from "path";
 
 const router = Router();
+
+router.post("/products/upload", async (req, res) => {
+  try {
+    const { base64, fileName } = req.body;
+    if (!base64) return res.status(400).json({ error: "No image data" });
+
+    const buffer = Buffer.from(base64.split(",")[1], "base64");
+    const name = fileName || `prod_${Date.now()}.png`;
+    const uploadDir = path.join(process.cwd(), "public", "images");
+    
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const filePath = path.join(uploadDir, name);
+    fs.writeFileSync(filePath, buffer);
+
+    res.json({ url: `/images/${name}` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get("/products", async (req, res) => {
   const { categoryId, search, visible, available } = req.query;
@@ -32,6 +56,7 @@ router.get("/products", async (req, res) => {
       isVisible: productsTable.isVisible,
       isAvailable: productsTable.isAvailable,
       orderCount: productsTable.orderCount,
+      leadTimeHours: productsTable.leadTimeHours,
       createdAt: productsTable.createdAt,
     })
     .from(productsTable)
@@ -55,14 +80,19 @@ router.get("/products", async (req, res) => {
 router.post("/products", async (req, res) => {
   const parsed = insertProductSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten() });
+    const errorDetails = JSON.stringify(parsed.error.flatten().fieldErrors);
+    res.status(400).json({ error: `Validation failed: ${errorDetails}` });
     return;
   }
-  const [product] = await db
-    .insert(productsTable)
-    .values(parsed.data)
-    .returning();
-  res.status(201).json(product);
+  try {
+    const [product] = await db
+      .insert(productsTable)
+      .values(parsed.data)
+      .returning();
+    res.status(201).json(product);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.get("/products/popular", async (req, res) => {
@@ -101,6 +131,7 @@ router.get("/products/:id", async (req, res) => {
       isVisible: productsTable.isVisible,
       isAvailable: productsTable.isAvailable,
       orderCount: productsTable.orderCount,
+      leadTimeHours: productsTable.leadTimeHours,
       createdAt: productsTable.createdAt,
     })
     .from(productsTable)
@@ -116,21 +147,54 @@ router.get("/products/:id", async (req, res) => {
 
 router.put("/products/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const parsed = insertProductSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.flatten() });
-    return;
+
+  try {
+    const body = req.body;
+
+    // Explicitly build the update payload with correct Drizzle camelCase keys
+    // and proper types — avoids passing unknown fields or wrong types to the DB
+    const updateData: Record<string, unknown> = {};
+
+    if (body.name !== undefined)               updateData.name = String(body.name);
+    if (body.slug !== undefined)               updateData.slug = String(body.slug);
+    if (body.description !== undefined)        updateData.description = body.description ?? null;
+    if (body.basePrice !== undefined)          updateData.basePrice = String(Number(body.basePrice));
+    if (body.categoryId !== undefined)         updateData.categoryId = body.categoryId ? Number(body.categoryId) : null;
+    if (body.allowCustomMessage !== undefined) updateData.allowCustomMessage = Boolean(body.allowCustomMessage);
+    if (body.isVisible !== undefined)          updateData.isVisible = Boolean(body.isVisible);
+    if (body.isAvailable !== undefined)        updateData.isAvailable = Boolean(body.isAvailable);
+    if (body.leadTimeHours !== undefined)      updateData.leadTimeHours = Number(body.leadTimeHours);
+
+    // imageUrls, variants, addons must be JSON arrays
+    if (body.imageUrls !== undefined) {
+      updateData.imageUrls = Array.isArray(body.imageUrls)
+        ? body.imageUrls
+        : (typeof body.imageUrls === "string"
+            ? body.imageUrls.split("\n").map((s: string) => s.trim()).filter(Boolean)
+            : []);
+    }
+    if (body.variants !== undefined) {
+      updateData.variants = Array.isArray(body.variants) ? body.variants : [];
+    }
+    if (body.addons !== undefined) {
+      updateData.addons = Array.isArray(body.addons) ? body.addons : [];
+    }
+
+    const [product] = await db
+      .update(productsTable)
+      .set(updateData)
+      .where(eq(productsTable.id, id))
+      .returning();
+
+    if (!product) {
+      res.status(404).json({ error: "Product not found" });
+      return;
+    }
+    res.json(product);
+  } catch (err: any) {
+    console.error("Product update DB error:", err);
+    res.status(500).json({ error: `DB Error: ${err.message}` });
   }
-  const [product] = await db
-    .update(productsTable)
-    .set(parsed.data)
-    .where(eq(productsTable.id, id))
-    .returning();
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-  res.json(product);
 });
 
 router.delete("/products/:id", async (req, res) => {

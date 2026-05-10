@@ -1,0 +1,23 @@
+آئندہ کے لیے آسان طریقہ
+دونوں servers ایک ساتھ چلانے کے لیے دو الگ terminals میں:
+
+Terminal 1 — API Server:
+
+powershell
+
+cd d:\Data\Downloads\Attached-Asset-Manager\artifacts\api-server
+$env:DATABASE_URL="postgres://postgres:11223344@localhost:5432/postgres"
+pnpm run start
+
+
+Terminal 2 — Frontend:
+
+powershell
+
+cd d:\Data\Downloads\Attached-Asset-Manager\artifacts\bake-delight-pro
+pnpm run dev
+
+
+
+پھر http://localhost:3000 پر سائٹ مکمل کام کرے گی۔
+

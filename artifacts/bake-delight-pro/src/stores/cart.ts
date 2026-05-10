@@ -11,6 +11,7 @@ export interface CartItem {
   selectedAddons: string[];
   customMessage?: string | null;
   subtotal: number;
+  leadTimeHours?: number;
 }
 
 interface CartState {

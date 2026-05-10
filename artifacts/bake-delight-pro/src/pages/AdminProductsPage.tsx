@@ -19,10 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, ShoppingBag } from "lucide-react";
+import { Plus, Pencil, Trash2, ShoppingBag, Camera, Upload, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
+import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
 
 interface VariantOption { label: string; priceAdjustment: number }
 interface Variant { name: string; type: string; options: VariantOption[] }
@@ -31,12 +32,13 @@ interface Addon { name: string; price: number }
 interface ProductFormData {
   name: string; slug: string; description: string; basePrice: string;
   categoryId: string; imageUrls: string; allowCustomMessage: boolean;
-  isVisible: boolean; isAvailable: boolean;
+  isVisible: boolean; isAvailable: boolean; leadTimeHours: string;
 }
 
-type Product = { id: number; name: string; slug: string; description?: string | null; basePrice: string | number; categoryId?: number | null; imageUrls: unknown; variants: unknown; addons: unknown; allowCustomMessage: boolean; isVisible: boolean; isAvailable: boolean; category?: { name: string } | null; orderCount: number }
+type Product = { id: number; name: string; slug: string; description?: string | null; basePrice: string | number; categoryId?: number | null; imageUrls: unknown; variants: unknown; addons: unknown; allowCustomMessage: boolean; isVisible: boolean; isAvailable: boolean; leadTimeHours: number; category?: { name: string } | null; orderCount: number }
 
 export default function AdminProductsPage() {
+  const { isUrdu } = useLanguage();
   const [, navigate] = useLocation();
   const { data: session, isLoading: loadingSession } = useGetAdminMe();
   const queryClient = useQueryClient();
@@ -45,6 +47,35 @@ export default function AdminProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [variants, setVariants] = useState<Variant[]>([]);
   const [addons, setAddons] = useState<Addon[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        const res = await fetch("/api/products/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ base64, fileName: file.name }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          const currentUrls = form.getValues("imageUrls");
+          form.setValue("imageUrls", currentUrls ? `${currentUrls}\n${data.url}` : data.url);
+          toast({ title: "Image uploaded successfully" });
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (!loadingSession && !session?.authenticated) navigate("/admin/login");
@@ -55,7 +86,7 @@ export default function AdminProductsPage() {
   const { data: categories } = useListCategories();
 
   const form = useForm<ProductFormData>({
-    defaultValues: { name: "", slug: "", description: "", basePrice: "", categoryId: "", imageUrls: "", allowCustomMessage: false, isVisible: true, isAvailable: true },
+    defaultValues: { name: "", slug: "", description: "", basePrice: "", categoryId: "", imageUrls: "", allowCustomMessage: false, isVisible: true, isAvailable: true, leadTimeHours: "24" },
   });
 
   const createProduct = useCreateProduct({ mutation: { onSuccess: () => { queryClient.invalidateQueries(); setOpen(false); toast({ title: "Product created" }); } } });
@@ -68,7 +99,7 @@ export default function AdminProductsPage() {
     setEditing(null);
     setVariants([]);
     setAddons([]);
-    form.reset({ name: "", slug: "", description: "", basePrice: "", categoryId: "", imageUrls: "", allowCustomMessage: false, isVisible: true, isAvailable: true });
+    form.reset({ name: "", slug: "", description: "", basePrice: "", categoryId: "", imageUrls: "", allowCustomMessage: false, isVisible: true, isAvailable: true, leadTimeHours: "24" });
     setOpen(true);
   };
 
@@ -81,6 +112,7 @@ export default function AdminProductsPage() {
       basePrice: String(p.basePrice), categoryId: p.categoryId ? String(p.categoryId) : "",
       imageUrls: ((p.imageUrls as string[]) ?? []).join("\n"),
       allowCustomMessage: p.allowCustomMessage, isVisible: p.isVisible, isAvailable: p.isAvailable,
+      leadTimeHours: String(p.leadTimeHours || 0),
     });
     setOpen(true);
   };
@@ -94,11 +126,23 @@ export default function AdminProductsPage() {
       variants, addons,
       allowCustomMessage: data.allowCustomMessage,
       isVisible: data.isVisible, isAvailable: data.isAvailable,
+      leadTimeHours: Number(data.leadTimeHours),
     };
     if (editing) {
-      updateProduct.mutate({ id: editing.id, data: payload });
+      console.log("Updating product:", editing.id, payload);
+      updateProduct.mutate({ id: editing.id, data: payload as any }, {
+        onError: (err: any) => {
+          console.error("Update failed:", err);
+          toast({ title: "Update failed", description: err.response?.data?.error || err.message, variant: "destructive" });
+        }
+      });
     } else {
-      createProduct.mutate({ data: payload });
+      createProduct.mutate({ data: payload as any }, {
+        onError: (err: any) => {
+          console.error("Creation failed:", err);
+          toast({ title: "Creation failed", description: err.response?.data?.error || err.message, variant: "destructive" });
+        }
+      });
     }
   };
 
@@ -110,10 +154,10 @@ export default function AdminProductsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-serif font-bold">Products</h1>
-            <p className="text-sm text-muted-foreground">Manage your bakery catalog.</p>
+            <h1 className="text-2xl font-serif font-bold">{getLocalizedText("Products | پروڈکٹس", isUrdu)}</h1>
+            <p className="text-sm text-muted-foreground">{getLocalizedText("Manage your bakery catalog. | اپنی بیکری کی مصنوعات کا انتظام کریں۔", isUrdu)}</p>
           </div>
-          <Button onClick={openCreate} className="gap-2"><Plus className="h-4 w-4" /> Add Product</Button>
+          <Button onClick={openCreate} className="gap-2"><Plus className="h-4 w-4" /> {getLocalizedText("Add Product | پروڈکٹ شامل کریں", isUrdu)}</Button>
         </div>
 
         {isLoading ? (
@@ -131,19 +175,19 @@ export default function AdminProductsPage() {
                       {images[0] ? <img src={images[0]} alt={p.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-secondary/30 to-accent/30 flex items-center justify-center"><ShoppingBag className="h-6 w-6 text-muted-foreground/30" /></div>}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{p.name}</p>
-                      <p className="text-sm text-muted-foreground">{formatCurrency(Number(p.basePrice))} {p.category && `· ${p.category.name}`}</p>
-                      <p className="text-xs text-muted-foreground">{p.orderCount} orders</p>
+                      <p className="font-semibold truncate">{getLocalizedText(p.name, isUrdu)}</p>
+                      <p className="text-sm text-muted-foreground">{formatCurrency(Number(p.basePrice))} {p.category && `· ${getLocalizedText(p.category.name, isUrdu)}`}</p>
+                      <p className="text-xs text-muted-foreground">{p.orderCount} {getLocalizedText("orders | آرڈرز", isUrdu)} · {p.leadTimeHours}h {getLocalizedText("lead time | وقت", isUrdu)}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1.5 text-xs">
                           <Switch checked={p.isVisible} onCheckedChange={() => toggleVisibility.mutate({ id: p.id })} id={`vis-${p.id}`} />
-                          <label htmlFor={`vis-${p.id}`} className="text-muted-foreground">Visible</label>
+                          <label htmlFor={`vis-${p.id}`} className="text-muted-foreground">{getLocalizedText("Visible | ظاہر", isUrdu)}</label>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs">
                           <Switch checked={p.isAvailable} onCheckedChange={() => toggleAvailability.mutate({ id: p.id })} id={`avail-${p.id}`} />
-                          <label htmlFor={`avail-${p.id}`} className="text-muted-foreground">In Stock</label>
+                          <label htmlFor={`avail-${p.id}`} className="text-muted-foreground">{getLocalizedText("In Stock | دستیاب", isUrdu)}</label>
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(p as Product)}><Pencil className="h-4 w-4" /></Button>
@@ -159,7 +203,7 @@ export default function AdminProductsPage() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? "Edit Product" : "New Product"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? getLocalizedText("Edit Product | پروڈکٹ ترمیم کریں", isUrdu) : getLocalizedText("New Product | نئی پروڈکٹ", isUrdu)}</DialogTitle></DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
               <div className="grid grid-cols-2 gap-3">
@@ -190,7 +234,22 @@ export default function AdminProductsPage() {
                 <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>
               )} />
               <FormField control={form.control} name="imageUrls" render={({ field }) => (
-                <FormItem><FormLabel>Image URLs (one per line)</FormLabel><FormControl><Textarea rows={3} placeholder="https://..." {...field} /></FormControl></FormItem>
+                <FormItem>
+                  <div className="flex items-center justify-between mb-2">
+                    <FormLabel>Image URLs (one per line)</FormLabel>
+                    <div className="relative">
+                      <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploading} />
+                      <Button type="button" variant="outline" size="sm" className="gap-2" disabled={uploading}>
+                        {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                        {getLocalizedText("Upload | اپ لوڈ", isUrdu)}
+                      </Button>
+                    </div>
+                  </div>
+                  <FormControl><Textarea rows={3} placeholder="https://..." {...field} /></FormControl>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="leadTimeHours" render={({ field }) => (
+                <FormItem><FormLabel>Lead Time (Hours) - Set 0 for ready items</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
 
               {/* Variants */}
@@ -247,9 +306,9 @@ export default function AdminProductsPage() {
 
               <div className="flex gap-3 pt-2">
                 <Button type="submit" className="flex-1" disabled={createProduct.isPending || updateProduct.isPending}>
-                  {editing ? "Save Changes" : "Create Product"}
+                  {editing ? getLocalizedText("Save Changes | تبدیلیاں محفوظ کریں", isUrdu) : getLocalizedText("Create Product | پروڈکٹ بنائیں", isUrdu)}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>{getLocalizedText("Cancel | منسوخ کریں", isUrdu)}</Button>
               </div>
             </form>
           </Form>

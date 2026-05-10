@@ -13,6 +13,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
+import { motion, AnimatePresence } from "framer-motion";
+import { LayoutGrid, List, Phone, MapPin, CalendarDays, Clock, ShoppingBag, MessageCircle, FileText } from "lucide-react";
+import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
 
 const STATUS_STEPS = ["pending","confirmed","in_baking","out_for_delivery","completed"] as const;
 const STATUS_LABELS: Record<string, string> = {
@@ -32,9 +35,11 @@ interface OrderItem { productName: string; quantity: number; unitPrice: number; 
 type OrderData = { id: number; customerName: string; customerPhone: string; customerEmail?: string | null; deliveryDate: string; deliveryTimeSlot?: string | null; status: string; items: unknown; totalAmount: string | number; subtotal: string | number; discountAmount: string | number; couponCode?: string | null; deliveryAddress: string; notes?: string | null; createdAt: string }
 
 export default function AdminOrdersPage() {
+  const { isUrdu } = useLanguage();
   const [, navigate] = useLocation();
   const { data: session, isLoading: loadingSession } = useGetAdminMe();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   const [selectedOrder, setSelectedOrder] = useState<OrderData | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -52,78 +57,182 @@ export default function AdminOrdersPage() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries();
-        toast({ title: "Status updated" });
+        toast({ title: "Status updated successfully" });
       },
     },
   });
 
+  const handleDragStart = (e: React.DragEvent, orderId: number) => {
+    e.dataTransfer.setData("orderId", orderId.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // Necessary to allow dropping
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    const orderId = e.dataTransfer.getData("orderId");
+    if (orderId) {
+      updateStatus.mutate({ id: parseInt(orderId), data: { status: newStatus } });
+    }
+  };
+
+  const kanbanColumns = [...STATUS_STEPS, "cancelled"];
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-serif font-bold">Orders</h1>
-            <p className="text-sm text-muted-foreground">Manage and track all customer orders.</p>
+            <h1 className="text-3xl font-serif font-bold tracking-tight">{getLocalizedText("Orders | آرڈرز", isUrdu)}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{getLocalizedText("Manage and track all customer orders. | تمام کسٹمرز کے آرڈرز کا انتظام اور ٹریک کریں۔", isUrdu)}</p>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Orders</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3">
+            <div className="flex bg-muted p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === "kanban" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <LayoutGrid className="w-4 h-4" /> {getLocalizedText("Kanban | کنبان", isUrdu)}
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <List className="w-4 h-4" /> {getLocalizedText("List | فہرست", isUrdu)}
+              </button>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-44 bg-background">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Orders</SelectItem>
+                {Object.entries(STATUS_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-4 space-y-3">{[1,2,3].map(i=><Skeleton key={i} className="h-16"/>)}</div>
-            ) : !orders?.length ? (
-              <div className="py-12 text-center text-muted-foreground text-sm">No orders found.</div>
-            ) : (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-64 rounded-xl" />)}
+          </div>
+        ) : !orders?.length ? (
+          <Card className="border-dashed shadow-none">
+            <CardContent className="py-16 text-center">
+              <ShoppingBag className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-lg font-medium text-muted-foreground">No orders found.</p>
+              <p className="text-sm text-muted-foreground mt-1">Wait for new orders to arrive.</p>
+            </CardContent>
+          </Card>
+        ) : viewMode === "kanban" ? (
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+            {kanbanColumns.map(status => {
+              const colOrders = orders.filter(o => o.status === status);
+              return (
+                <div 
+                  key={status} 
+                  className="min-w-[320px] max-w-[320px] flex-shrink-0 bg-muted/30 dark:bg-muted/10 rounded-xl p-3 border border-border/50 snap-start"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, status)}
+                >
+                  <div className="flex items-center justify-between mb-4 px-1">
+                    <h3 className="font-semibold text-sm flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[status]?.split(' ')[0] || 'bg-gray-400'}`} />
+                      {STATUS_LABELS[status] || status}
+                    </h3>
+                    <Badge variant="secondary" className="rounded-full text-xs font-mono">{colOrders.length}</Badge>
+                  </div>
+                  <div className="space-y-3 min-h-[150px]">
+                    <AnimatePresence>
+                      {colOrders.map(order => (
+                        <motion.div
+                          key={order.id}
+                          layoutId={`order-${order.id}`}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          draggable
+                          onDragStart={(e: any) => handleDragStart(e, order.id)}
+                          onClick={() => setSelectedOrder(order as OrderData)}
+                          className={`bg-background rounded-lg p-4 border shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md hover:border-primary/30 transition-all ${order.status === 'pending' ? 'border-yellow-200 dark:border-yellow-900/50' : 'border-border'}`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-mono text-xs text-muted-foreground">#{order.id}</span>
+                            <span className="font-semibold text-sm text-primary">{formatCurrency(Number(order.totalAmount))}</span>
+                          </div>
+                          <p className="font-medium text-sm mb-1">{order.customerName}</p>
+                          <div className="space-y-1 mt-3">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <CalendarDays className="w-3.5 h-3.5" />
+                              <span>{order.deliveryDate}</span>
+                            </div>
+                            {order.deliveryTimeSlot && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>{order.deliveryTimeSlot}</span>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    {colOrders.length === 0 && (
+                      <div className="h-full flex items-center justify-center text-xs text-muted-foreground/50 border-2 border-dashed border-border rounded-lg py-8">
+                        Drop orders here
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="backdrop-blur-xl bg-background/80 shadow-sm overflow-hidden">
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="border-b border-border">
+                  <thead className="bg-muted/50 border-b border-border">
                     <tr className="text-left text-xs text-muted-foreground uppercase tracking-wider">
-                      <th className="px-4 py-3">Order</th>
-                      <th className="px-4 py-3">Customer</th>
-                      <th className="px-4 py-3">Delivery Date</th>
-                      <th className="px-4 py-3">Total</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Actions</th>
+                      <th className="px-4 py-4 font-medium">Order</th>
+                      <th className="px-4 py-4 font-medium">Customer</th>
+                      <th className="px-4 py-4 font-medium">Delivery Date</th>
+                      <th className="px-4 py-4 font-medium">Total</th>
+                      <th className="px-4 py-4 font-medium">Status</th>
+                      <th className="px-4 py-4 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {orders.map((order) => (
-                      <tr key={order.id} className="hover:bg-muted/40 transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{order.id}</td>
+                      <tr key={order.id} className="hover:bg-muted/40 transition-colors group">
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground group-hover:text-foreground transition-colors">#{order.id}</td>
                         <td className="px-4 py-3">
                           <p className="font-medium">{order.customerName}</p>
-                          <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" /> {order.customerPhone}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <p>{order.deliveryDate}</p>
-                          {order.deliveryTimeSlot && <p className="text-xs text-muted-foreground">{order.deliveryTimeSlot}</p>}
+                          <p className="flex items-center gap-1.5"><CalendarDays className="w-3.5 h-3.5 text-muted-foreground" /> {order.deliveryDate}</p>
+                          {order.deliveryTimeSlot && <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5"><Clock className="w-3.5 h-3.5" /> {order.deliveryTimeSlot}</p>}
                         </td>
-                        <td className="px-4 py-3 font-semibold">{formatCurrency(Number(order.totalAmount))}</td>
+                        <td className="px-4 py-3 font-semibold text-primary">{formatCurrency(Number(order.totalAmount))}</td>
                         <td className="px-4 py-3">
                           <Badge className={`text-xs ${STATUS_COLORS[order.status] ?? ""}`}>
                             {STATUS_LABELS[order.status] ?? order.status}
                           </Badge>
                         </td>
                         <td className="px-4 py-3">
-                          <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order as OrderData)}>View</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(order as OrderData)} className="hover:bg-primary/10 hover:text-primary">View Details</Button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Order detail dialog */}
@@ -140,6 +249,28 @@ export default function AdminOrdersPage() {
                   <div><p className="text-muted-foreground text-xs">Delivery</p><p className="font-medium">{selectedOrder.deliveryDate}</p>{selectedOrder.deliveryTimeSlot && <p className="text-xs">{selectedOrder.deliveryTimeSlot}</p>}</div>
                   <div className="col-span-2"><p className="text-muted-foreground text-xs">Address</p><p>{selectedOrder.deliveryAddress}</p></div>
                   {selectedOrder.notes && <div className="col-span-2"><p className="text-muted-foreground text-xs">Notes</p><p>{selectedOrder.notes}</p></div>}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full gap-2 border-green-500/30 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20"
+                    onClick={() => {
+                      const msg = encodeURIComponent(`Hi ${selectedOrder.customerName}, your Marhaba Bakers order #${selectedOrder.id} status is now: ${STATUS_LABELS[selectedOrder.status]}.`);
+                      window.open(`https://wa.me/${selectedOrder.customerPhone.replace(/[^0-9]/g,'')}?text=${msg}`, '_blank');
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4" /> WhatsApp Notify
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full gap-2"
+                    onClick={() => window.print()}
+                  >
+                    <FileText className="w-4 h-4" /> Print Invoice
+                  </Button>
                 </div>
 
                 {/* Status timeline */}

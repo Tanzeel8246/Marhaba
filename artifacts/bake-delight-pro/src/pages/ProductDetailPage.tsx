@@ -3,18 +3,13 @@ import { useParams, useLocation } from "wouter";
 import { useGetProduct, useGetRelatedProducts, getGetProductQueryKey, getGetRelatedProductsQueryKey } from "@workspace/api-client-react";
 import { StorefrontLayout } from "@/components/StorefrontLayout";
 import { useCartStore } from "@/stores/cart";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Minus, Plus, ShoppingCart, ArrowLeft, ArrowRight, ShoppingBag } from "lucide-react";
+import { ShoppingBag, ArrowLeft, ArrowRight, Minus, Plus, Check } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/currency";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
+import { motion } from "framer-motion";
 
 interface Variant { name: string; type: string; options: Array<{ label: string; priceAdjustment: number }> }
 interface Addon { name: string; price: number }
@@ -39,20 +34,29 @@ export default function ProductDetailPage() {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [customMessage, setCustomMessage] = useState("");
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
 
   const BackArrow = isUrdu ? ArrowRight : ArrowLeft;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
+  };
 
   if (isLoading) {
     return (
       <StorefrontLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <Skeleton className="aspect-square rounded-2xl" />
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-6 w-1/3" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-12 w-full" />
+            <div className="aspect-square neu-pressed rounded-[2.5rem] bg-muted animate-pulse" />
+            <div className="space-y-6 pt-4">
+              <div className="h-10 w-3/4 neu-pressed rounded-full bg-muted animate-pulse" />
+              <div className="h-8 w-1/3 neu-pressed rounded-full bg-muted animate-pulse" />
+              <div className="h-32 w-full neu-pressed rounded-2xl bg-muted animate-pulse" />
+              <div className="h-16 w-full neu-flat rounded-full bg-muted animate-pulse mt-8" />
             </div>
           </div>
         </div>
@@ -63,9 +67,14 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <StorefrontLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <p className="text-muted-foreground">{t.product.notFound}</p>
-          <Link href="/shop"><Button className="mt-4">{t.product.backToShop}</Button></Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center neu-pressed rounded-[3rem] mt-8">
+          <ShoppingBag className="w-16 h-16 mx-auto mb-6 opacity-30" />
+          <p className="text-xl font-serif font-bold uppercase tracking-wide mb-6">{t.product.notFound}</p>
+          <Link href="/shop">
+            <button className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-foreground hover:text-primary active:neu-pressed transition-all">
+              {t.product.backToShop}
+            </button>
+          </Link>
         </div>
       </StorefrontLayout>
     );
@@ -94,7 +103,7 @@ export default function ProductDetailPage() {
     }
     addItem({
       productId: product.id,
-      productName: product.name,
+      productName: getLocalizedText(product.name, isUrdu),
       productImageUrl: images[0] ?? null,
       quantity,
       unitPrice: price,
@@ -102,182 +111,220 @@ export default function ProductDetailPage() {
       selectedAddons,
       customMessage: customMessage || null,
       subtotal: price * quantity,
+      leadTimeHours: (product as any).leadTimeHours || 0,
     });
-    toast({ title: t.product.addedToCart(product.name, quantity) });
+    toast({ title: t.product.addedToCart(getLocalizedText(product.name, isUrdu), quantity) });
     navigate("/cart");
   };
 
   return (
     <StorefrontLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button onClick={() => history.back()} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <button onClick={() => history.back()} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground mb-8 transition-colors">
           <BackArrow className="h-4 w-4" /> {t.product.back}
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
           {/* Images */}
-          <div className="space-y-3">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-muted">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="lg:col-span-6 space-y-4">
+            <div 
+              className="aspect-square rounded-[2.5rem] neu-pressed p-2 overflow-hidden relative group cursor-zoom-in"
+              onMouseEnter={() => setIsZoomed(true)}
+              onMouseLeave={() => setIsZoomed(false)}
+              onMouseMove={handleMouseMove}
+            >
               {images[selectedImage] ? (
-                <img src={images[selectedImage]} alt={product.name} className="w-full h-full object-cover" />
+                <img 
+                  src={images[selectedImage]} 
+                  alt={getLocalizedText(product.name, isUrdu)} 
+                  className={`w-full h-full object-cover rounded-[2rem] transition-transform duration-200 ${isZoomed ? "scale-[2]" : "scale-100"}`} 
+                  style={isZoomed ? { transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` } : undefined}
+                />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary/30 to-accent/30">
+                <div className="w-full h-full rounded-[2rem] flex items-center justify-center bg-muted/50">
                   <ShoppingBag className="h-24 w-24 text-muted-foreground/30" />
                 </div>
               )}
             </div>
             {images.length > 1 && (
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-4 overflow-x-auto pb-2 px-2">
                 {images.map((img, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${i === selectedImage ? "border-primary" : "border-transparent"}`}
+                    className={`w-20 h-20 shrink-0 rounded-2xl overflow-hidden p-1 transition-all ${
+                      i === selectedImage ? "neu-pressed" : "neu-flat hover:neu-pressed"
+                    }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" className="w-full h-full object-cover rounded-xl" />
                   </button>
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
 
           {/* Details */}
-          <div className="space-y-6">
-            {product.category && <Badge variant="secondary">{product.category.name}</Badge>}
-            <h1 className="text-3xl font-serif font-bold">{product.name}</h1>
-            <div className="text-3xl font-bold text-primary">{formatCurrency(price)}</div>
-            {product.description && <p className="text-muted-foreground leading-relaxed">{product.description}</p>}
-
-            {!product.isAvailable && (
-              <Badge variant="destructive" className="text-sm">{t.product.unavailable}</Badge>
-            )}
-
-            {/* Variants */}
-            {variants.map((variant) => (
-              <div key={variant.type} className="space-y-2">
-                <Label className="font-semibold capitalize">{variant.name || variant.type}</Label>
-                <div className="flex flex-wrap gap-2">
-                  {variant.options.map((opt) => {
-                    const key = variant.type || variant.name;
-                    const selected = selectedVariants[key] === opt.label;
-                    return (
-                      <button
-                        key={opt.label}
-                        onClick={() => setSelectedVariants((prev) => ({ ...prev, [key]: opt.label }))}
-                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
-                          selected
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                      >
-                        {opt.label}
-                        {opt.priceAdjustment !== 0 && (
-                          <span className="ml-1 text-xs opacity-75">
-                            {opt.priceAdjustment > 0 ? "+" : ""}{formatCurrency(opt.priceAdjustment)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="lg:col-span-6 flex flex-col justify-center py-4">
+            
+            <div className="neu-flat rounded-[2.5rem] p-8 sm:p-10">
+              {product.category && (
+                <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary mb-4">
+                  {product.category.name}
+                </span>
+              )}
+              <h1 className="text-3xl sm:text-4xl font-serif font-bold uppercase tracking-wide leading-tight mb-4">{getLocalizedText(product.name, isUrdu)}</h1>
+              <div className="text-2xl font-bold text-foreground mb-6">
+                {formatCurrency(price)}
               </div>
-            ))}
+              
+              {product.description && (
+                <p className="text-muted-foreground text-sm leading-relaxed mb-8">{getLocalizedText(product.description, isUrdu)}</p>
+              )}
 
-            {/* Add-ons */}
-            {addons.length > 0 && (
-              <div className="space-y-2">
-                <Label className="font-semibold">{t.product.addons}</Label>
-                <div className="space-y-2">
-                  {addons.map((addon) => (
-                    <div key={addon.name} className="flex items-center gap-3">
-                      <Checkbox
-                        id={`addon-${addon.name}`}
-                        checked={selectedAddons.includes(addon.name)}
-                        onCheckedChange={(checked) => {
-                          setSelectedAddons((prev) =>
-                            checked ? [...prev, addon.name] : prev.filter((a) => a !== addon.name)
-                          );
-                        }}
-                      />
-                      <label htmlFor={`addon-${addon.name}`} className="text-sm cursor-pointer">
-                        {addon.name} <span className="text-muted-foreground">+{formatCurrency(addon.price)}</span>
-                      </label>
+              {!product.isAvailable && (
+                <div className="bg-destructive/10 text-destructive text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full inline-block mb-6">
+                  {t.product.unavailable}
+                </div>
+              )}
+
+              <div className="space-y-8">
+                {/* Variants */}
+                {variants.map((variant) => (
+                  <div key={variant.type} className="space-y-4">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{variant.name || variant.type}</label>
+                    <div className="flex flex-wrap gap-3">
+                      {variant.options.map((opt) => {
+                        const key = variant.type || variant.name;
+                        const selected = selectedVariants[key] === opt.label;
+                        return (
+                          <button
+                            key={opt.label}
+                            onClick={() => setSelectedVariants((prev) => ({ ...prev, [key]: opt.label }))}
+                            className={`px-5 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+                              selected
+                                ? "neu-pressed text-primary"
+                                : "neu-flat text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {opt.label}
+                            {opt.priceAdjustment !== 0 && (
+                              <span className="ml-2 text-[9px] opacity-75">
+                                {opt.priceAdjustment > 0 ? "+" : ""}{formatCurrency(opt.priceAdjustment)}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  ))}
+                  </div>
+                ))}
+
+                {/* Add-ons */}
+                {addons.length > 0 && (
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.product.addons}</label>
+                    <div className="space-y-3">
+                      {addons.map((addon) => (
+                        <label key={addon.name} className="flex items-center gap-4 cursor-pointer group">
+                          <div className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                            selectedAddons.includes(addon.name) ? "neu-pressed text-primary" : "neu-flat text-transparent group-hover:text-muted-foreground/30"
+                          }`}>
+                            <div className="w-3 h-3 rounded-sm bg-current" />
+                          </div>
+                          <Checkbox
+                            id={`addon-${addon.name}`}
+                            className="sr-only"
+                            checked={selectedAddons.includes(addon.name)}
+                            onCheckedChange={(checked) => {
+                              setSelectedAddons((prev) =>
+                                checked ? [...prev, addon.name] : prev.filter((a) => a !== addon.name)
+                              );
+                            }}
+                          />
+                          <span className="text-sm font-semibold group-hover:text-foreground transition-colors text-muted-foreground">
+                            {addon.name} <span className="text-xs ml-2 opacity-75">+{formatCurrency(addon.price)}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Custom message */}
+                {product.allowCustomMessage && (
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.product.customMessage}</label>
+                    <textarea
+                      placeholder={t.product.customMessagePlaceholder}
+                      value={customMessage}
+                      onChange={(e) => setCustomMessage(e.target.value)}
+                      maxLength={100}
+                      className="w-full neu-pressed rounded-2xl bg-transparent border-0 px-4 py-4 text-sm resize-none outline-none focus:ring-0 placeholder:text-muted-foreground/50"
+                      rows={2}
+                    />
+                  </div>
+                )}
+
+                {/* Quantity & Add to Cart */}
+                <div className="pt-6 border-t border-muted/50">
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <button 
+                        className="w-12 h-12 neu-flat rounded-full flex items-center justify-center active:neu-pressed text-foreground hover:text-primary transition-all shrink-0" 
+                        onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <div className="w-16 h-12 neu-pressed rounded-full flex items-center justify-center text-sm font-bold">
+                        {quantity}
+                      </div>
+                      <button 
+                        className="w-12 h-12 neu-flat rounded-full flex items-center justify-center active:neu-pressed text-foreground hover:text-primary transition-all shrink-0" 
+                        onClick={() => setQuantity((q) => q + 1)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <button
+                      className="w-full neu-flat rounded-full py-4 px-8 text-xs font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
+                      onClick={handleAddToCart}
+                      disabled={!product.isAvailable}
+                      data-testid="button-add-to-cart"
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                      {product.isAvailable ? t.product.addToCart : t.product.unavailableBtn}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Custom message */}
-            {product.allowCustomMessage && (
-              <div className="space-y-2">
-                <Label className="font-semibold">{t.product.customMessage}</Label>
-                <Textarea
-                  placeholder={t.product.customMessagePlaceholder}
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  maxLength={100}
-                  className="resize-none"
-                  rows={2}
-                />
-              </div>
-            )}
-
-            {/* Quantity */}
-            <div className="flex items-center gap-3">
-              <Label className="font-semibold">{t.product.quantity}</Label>
-              <div className="flex items-center gap-2 border border-border rounded-lg p-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-8 text-center font-semibold">{quantity}</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setQuantity((q) => q + 1)}>
-                  <Plus className="h-4 w-4" />
-                </Button>
               </div>
             </div>
-
-            <div className="pt-2">
-              <div className="text-lg font-semibold mb-3">
-                {t.product.total}: <span className="text-primary">{formatCurrency(price * quantity)}</span>
-              </div>
-              <Button
-                size="lg"
-                className="w-full gap-2 text-base"
-                onClick={handleAddToCart}
-                disabled={!product.isAvailable}
-                data-testid="button-add-to-cart"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {product.isAvailable ? t.product.addToCart : t.product.unavailableBtn}
-              </Button>
-            </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Related products */}
         {related && related.length > 0 && (
-          <section className="mt-16">
-            <h2 className="text-xl font-serif font-bold mb-6">{t.product.relatedTitle}</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {related.map((p) => (
-                <Link key={p.id} href={`/products/${p.id}`}>
-                  <Card className="overflow-hidden group cursor-pointer hover:shadow-md transition-all hover:-translate-y-1">
-                    <div className="aspect-square overflow-hidden bg-muted">
-                      {((p.imageUrls as string[]) ?? [])[0] ? (
-                        <img src={((p.imageUrls as string[]) ?? [])[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-secondary/30 to-accent/30 flex items-center justify-center">
-                          <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
-                        </div>
-                      )}
+          <section className="mt-24">
+            <h2 className="text-2xl font-serif font-bold uppercase tracking-wide mb-10 pl-2">{t.product.relatedTitle}</h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              {related.map((p, idx) => (
+                <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}>
+                  <Link href={`/products/${p.id}`} className="block h-full group">
+                    <div className="neu-flat rounded-[2rem] p-4 h-full flex flex-col">
+                      <div className="aspect-square neu-pressed rounded-[1.5rem] p-2 overflow-hidden mb-4 relative">
+                        {((p.imageUrls as string[]) ?? [])[0] ? (
+                          <img src={((p.imageUrls as string[]) ?? [])[0]} alt={p.name} className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-110" />
+                        ) : (
+                          <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
+                            <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-serif font-bold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2 uppercase">{p.name}</h3>
+                      <p className="font-bold text-primary text-sm mt-auto pt-3">{formatCurrency(Number(p.basePrice))}</p>
                     </div>
-                    <CardContent className="p-3">
-                      <p className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">{p.name}</p>
-                      <p className="text-sm font-bold text-primary mt-1">{formatCurrency(Number(p.basePrice))}</p>
-                    </CardContent>
-                  </Card>
-                </Link>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </section>

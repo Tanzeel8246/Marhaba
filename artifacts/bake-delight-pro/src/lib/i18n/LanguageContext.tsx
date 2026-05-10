@@ -58,3 +58,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 export function useLanguage() {
   return useContext(LanguageContext);
 }
+
+export function getLocalizedText(text: string | null | undefined, isUrdu: boolean): string {
+  if (!text) return "";
+  const parts = text.split('|').map(s => s.trim());
+  if (parts.length === 2) {
+    return isUrdu ? parts[1] : parts[0];
+  }
+  return text;
+}

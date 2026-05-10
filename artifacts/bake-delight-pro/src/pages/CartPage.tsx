@@ -3,23 +3,25 @@ import { Link, useLocation } from "wouter";
 import { useCartStore } from "@/stores/cart";
 import { useValidateCoupon, useListBlackoutDates, useCheckDeliveryCapacity, getCheckDeliveryCapacityQueryKey, useCreateOrder } from "@workspace/api-client-react";
 import { StorefrontLayout } from "@/components/StorefrontLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, ShoppingBag, Minus, Plus, Tag, MessageCircle, CheckCircle2, ArrowLeft, ArrowRight, AlertCircle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trash2, ShoppingBag, Minus, Plus, Tag, MessageCircle, CheckCircle2, ArrowLeft, ArrowRight, AlertCircle, Clock, Camera } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { addDays, format, isBefore } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useRef } from "react";
+
+// Using a dynamic approach for html2canvas since local install failed
+declare global {
+  interface Window {
+    html2canvas: any;
+  }
+}
 
 type CheckoutForm = {
   customerName: string;
@@ -28,6 +30,9 @@ type CheckoutForm = {
   deliveryAddress: string;
   deliveryDate: string;
   deliveryTimeSlot: string;
+  paymentMethod: "cod" | "jazzcash" | "easypaisa" | "bank";
+  transactionId?: string;
+  paymentScreenshot?: string;
   notes: string;
 };
 
@@ -44,21 +49,73 @@ export default function CartPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { t, isUrdu } = useLanguage();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then(r => r.json()).then(data => {
+      if (data.authenticated) setCurrentUser(data.user);
+    });
+  }, []);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placedOrderData, setPlacedOrderData] = useState<CheckoutForm | null>(null);
   const [whatsappNumber, setWhatsappNumber] = useState("923001234567");
+  const [paymentSettings, setPaymentSettings] = useState({
+    jazzcash: "0300-1234567 (Ali Ahmed)",
+    easypaisa: "0321-7654321 (Ali Ahmed)",
+    bank: "HBL: 1234-5678-9012-3456 (Marhaba Bakers)"
+  });
+  const receiptRef = useRef<HTMLDivElement>(null);
+
+  const downloadReceipt = async () => {
+    if (!receiptRef.current) return;
+    try {
+      // Dynamically load html2canvas from CDN if not present
+      if (!window.html2canvas) {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js";
+        document.head.appendChild(script);
+        await new Promise((resolve) => (script.onload = resolve));
+      }
+
+      const canvas = await window.html2canvas(receiptRef.current, {
+        backgroundColor: "#f4f4f5",
+        scale: 2,
+        useCORS: true, // Crucial for cross-origin product images
+      });
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `Receipt_Order_${Date.now()}.png`;
+      link.click();
+      toast({ title: "✅ Receipt Downloaded", description: "You can now attach it to WhatsApp." });
+    } catch (err) {
+      console.error("Screenshot error:", err);
+      toast({ title: "❌ Screenshot Failed", variant: "destructive" });
+    }
+  };
+
+  const [deliveryCharges, setDeliveryCharges] = useState(300);
 
   useEffect(() => {
-    fetch("/api/settings/public")
+    fetch(`/api/settings/public?t=${Date.now()}`)
       .then((r) => r.json())
-      .then((data) => { if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber); })
-      .catch(() => {});
+      .then((data) => { 
+        if (data.whatsappNumber) setWhatsappNumber(data.whatsappNumber); 
+        if (data.deliveryCharges) setDeliveryCharges(Number(data.deliveryCharges));
+        setPaymentSettings({
+          jazzcash: data.jazzcashDetails || paymentSettings.jazzcash,
+          easypaisa: data.easypaisaDetails || paymentSettings.easypaisa,
+          bank: data.bankDetails || paymentSettings.bank
+        });
+      })
+      .catch((err) => {
+        console.error("Settings fetch error:", err);
+      });
   }, []);
 
-  // Language-aware Zod schema
   const checkoutSchema = useMemo(() => z.object({
     customerName: z.string().min(2, t.validation.nameMin),
     customerPhone: z.string().min(10, t.validation.phoneMin),
@@ -66,7 +123,26 @@ export default function CartPage() {
     deliveryAddress: z.string().min(10, t.validation.addressMin),
     deliveryDate: z.string().min(1, t.validation.dateRequired),
     deliveryTimeSlot: z.string().optional(),
+    paymentMethod: z.enum(["cod", "jazzcash", "easypaisa", "bank"]).default("cod"),
+    transactionId: z.string().optional(),
+    paymentScreenshot: z.string().optional(),
     notes: z.string().optional(),
+  }).refine((data) => {
+    if (data.paymentMethod !== "cod") {
+      return !!data.transactionId && data.transactionId.length > 3;
+    }
+    return true;
+  }, {
+    message: "Transaction ID is required for online payments",
+    path: ["transactionId"]
+  }).refine((data) => {
+    if (data.paymentMethod !== "cod") {
+      return !!data.paymentScreenshot;
+    }
+    return true;
+  }, {
+    message: "Payment screenshot is required for online payments",
+    path: ["paymentScreenshot"]
   }), [t]);
 
   const { data: blackoutDates } = useListBlackoutDates();
@@ -76,7 +152,7 @@ export default function CartPage() {
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       customerName: "", customerPhone: "", customerEmail: "",
-      deliveryAddress: "", deliveryDate: "", deliveryTimeSlot: "", notes: "",
+      deliveryAddress: "", deliveryDate: "", deliveryTimeSlot: "", paymentMethod: "cod", notes: "",
     },
   });
 
@@ -109,16 +185,17 @@ export default function CartPage() {
     },
   });
 
-  const DELIVERY_CHARGES = 300;
   const subtotal = total();
   const discount = appliedCoupon?.discountAmount ?? 0;
-  const grandTotal = subtotal - discount + DELIVERY_CHARGES;
-  const minDate = format(addDays(new Date(), 1), "yyyy-MM-dd");
+  const grandTotal = subtotal - discount + deliveryCharges;
+  const maxLeadHours = items.length > 0 ? Math.max(0, ...items.map(item => item.leadTimeHours || 0)) : 0;
+  const leadDays = Math.ceil(maxLeadHours / 24);
+  const minDate = format(addDays(new Date(), leadDays), "yyyy-MM-dd");
 
   const isDateDisabled = (dateStr: string) => {
     if (!dateStr) return false;
     if (blackoutSet.has(dateStr)) return true;
-    return isBefore(new Date(dateStr), addDays(new Date(), 0.99));
+    return isBefore(new Date(dateStr), addDays(new Date(), leadDays - 0.01));
   };
 
   const siteOrigin = window.location.origin;
@@ -137,25 +214,32 @@ export default function CartPage() {
         const variants = Object.entries(item.selectedVariants).map(([k, v]) => `${k}: ${v}`).join(", ");
         const addons = item.selectedAddons.join(", ");
         const shareUrl = `${siteOrigin}/api/share/product/${item.productId}`;
+        const imageUrl = item.productImageUrl?.startsWith('http') 
+          ? item.productImageUrl 
+          : `${siteOrigin}${item.productImageUrl}`;
         return [
           `• *${item.productName}* × ${item.quantity} = ${formatCurrency(item.subtotal)}`,
           variants ? `  ${wa.variants}: ${variants}` : null,
           addons ? `  ${wa.addons}: ${addons}` : null,
           item.customMessage ? `  ${wa.message}: "${item.customMessage}"` : null,
           `  🔗 ${wa.product}: ${shareUrl}`,
-          item.productImageUrl ? `  🖼 ${wa.image}: ${item.productImageUrl}` : null,
+          imageUrl ? `  🖼 ${wa.image}: ${imageUrl}` : null,
         ].filter(Boolean).join("\n");
       }),
       "",
       `*${wa.subtotal}:* ${formatCurrency(subtotal)}`,
       appliedCoupon ? `*${wa.discount(appliedCoupon.code)}:* -${formatCurrency(discount)}` : null,
-      `*${wa.delivery}:* ${formatCurrency(DELIVERY_CHARGES)}`,
+      `*${wa.delivery}:* ${formatCurrency(deliveryCharges)}`,
       `*${wa.total}:* ${formatCurrency(grandTotal)}`,
       "",
       `*${wa.deliveryDate}:* ${data.deliveryDate}`,
       data.deliveryTimeSlot ? `*${wa.time}:* ${data.deliveryTimeSlot}` : null,
       `*${wa.address}:* ${data.deliveryAddress}`,
+      `*Payment Method:* ${data.paymentMethod.toUpperCase()}`,
+      data.transactionId ? `*Transaction ID:* ${data.transactionId}` : null,
       data.notes ? `*${wa.note}:* ${data.notes}` : null,
+      "",
+      "📸 *Note:* I have attached the payment receipt and product images below.",
     ].filter(Boolean).join("\n");
     return lines;
   };
@@ -193,48 +277,113 @@ export default function CartPage() {
           selectedAddons: item.selectedAddons,
           customMessage: item.customMessage ?? null,
         })),
+        userId: currentUser?.id ?? null,
       },
     });
   };
 
   const BackArrow = isUrdu ? ArrowRight : ArrowLeft;
 
-  // Success screen
   if (orderPlaced) {
     return (
       <StorefrontLayout>
-        <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+        <div className="max-w-lg mx-auto px-4 py-24 text-center neu-pressed rounded-[3rem] mt-12">
+          <div className="w-24 h-24 neu-flat rounded-full flex items-center justify-center mx-auto mb-8">
+            <CheckCircle2 className="h-10 w-10 text-primary" />
           </div>
-          <h1 className="text-2xl font-serif font-bold mb-2">{t.cart.orderPlaced}</h1>
-          <p className="text-muted-foreground mb-2">{t.cart.orderSentDesc}</p>
+          <h1 className="text-3xl font-serif font-bold mb-4 uppercase tracking-wide">{t.cart.orderPlaced}</h1>
+          <p className="text-muted-foreground mb-8 text-sm">{t.cart.orderSentDesc}</p>
           {placedOrderData && (
-            <div className="bg-muted rounded-xl p-4 text-sm text-left mb-6 space-y-1">
-              <p><span className="text-muted-foreground">{t.cart.name}:</span> <strong>{placedOrderData.customerName}</strong></p>
-              <p><span className="text-muted-foreground">{t.cart.date}:</span> <strong>{placedOrderData.deliveryDate}</strong></p>
-              <p><span className="text-muted-foreground">{t.cart.total}:</span> <strong className="text-primary">{formatCurrency(grandTotal)}</strong></p>
+            <div ref={receiptRef} className="neu-flat rounded-[2rem] p-6 text-sm text-left mb-8 space-y-4 bg-background border border-primary/10">
+              <div className="flex justify-between items-center border-b border-dashed pb-3 mb-3">
+                <h3 className="font-serif font-bold text-lg text-primary">Marhaba Bakers</h3>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">{format(new Date(), 'dd MMM yyyy')}</span>
+              </div>
+              <div className="flex justify-between"><span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t.cart.name}</span> <span className="font-bold">{placedOrderData.customerName}</span></div>
+              <div className="flex justify-between"><span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t.cart.date}</span> <span className="font-bold">{placedOrderData.deliveryDate}</span></div>
+              
+              <div className="py-2 border-y border-dashed border-muted/50 space-y-3">
+                {items.map((item, i) => (
+                  <div key={i} className="flex gap-3 items-start border-b border-muted/20 pb-2 last:border-0">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-primary/10">
+                      {item.productImageUrl ? (
+                        <img src={item.productImageUrl} crossOrigin="anonymous" alt={item.productName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-background text-[8px]">No Image</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="font-bold">{item.productName} × {item.quantity}</span>
+                        <span className="font-bold text-primary">{formatCurrency(item.subtotal)}</span>
+                      </div>
+                      {Object.entries(item.selectedVariants).length > 0 && (
+                        <p className="text-[9px] text-muted-foreground">{Object.entries(item.selectedVariants).map(([k,v])=>`${k}: ${v}`).join(", ")}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-between pt-2"><span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t.cart.total}</span> <span className="text-primary font-bold text-lg">{formatCurrency(grandTotal)}</span></div>
+              <p className="text-[9px] text-center text-muted-foreground italic pt-4">Thank you for choosing Marhaba Bakers!</p>
             </div>
           )}
-          <p className="text-xs text-muted-foreground mb-6">{t.cart.confirmSoon}</p>
-          <div className="flex gap-3 justify-center">
-            <Link href="/shop"><Button size="lg">{t.cart.continueShopping}</Button></Link>
-            <Link href="/"><Button size="lg" variant="outline">{t.cart.goHome}</Button></Link>
+          
+          <div className="flex flex-col gap-4 mb-8">
+            <button 
+              onClick={downloadReceipt}
+              className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-primary hover:bg-primary/5 active:neu-pressed transition-all w-full flex items-center justify-center gap-2"
+            >
+              📷 {isUrdu ? "رسید ڈاؤن لوڈ کریں" : "Download Digital Receipt"}
+            </button>
+            
+            {navigator.share && (
+              <button 
+                onClick={async () => {
+                  if (!receiptRef.current) return;
+                  try {
+                    const canvas = await window.html2canvas(receiptRef.current, { useCORS: true, scale: 2 });
+                    canvas.toBlob(async (blob: Blob | null) => {
+                      if (!blob) return;
+                      const file = new File([blob], 'Marhaba_Bakers_Receipt.png', { type: 'image/png' });
+                      await navigator.share({
+                        files: [file],
+                        title: 'Order Receipt',
+                        text: 'My Order Receipt from Marhaba Bakers'
+                      });
+                    });
+                  } catch (err) {
+                    console.error("Share error:", err);
+                  }
+                }}
+                className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-green-600 hover:bg-green-50 active:neu-pressed transition-all w-full flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="h-4 w-4" /> {isUrdu ? "واٹس ایپ پر شیئر کریں" : "Share on WhatsApp"}
+              </button>
+            )}
+            
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t.cart.confirmSoon}</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/shop"><button className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all w-full">{t.cart.continueShopping}</button></Link>
+            <Link href="/"><button className="neu-pressed px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:text-primary transition-all w-full">{t.cart.goHome}</button></Link>
           </div>
         </div>
       </StorefrontLayout>
     );
   }
 
-  // Empty cart
   if (!items.length) {
     return (
       <StorefrontLayout>
-        <div className="max-w-lg mx-auto px-4 py-20 text-center">
-          <ShoppingBag className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
-          <h1 className="text-2xl font-serif font-bold mb-3">{t.cart.emptyCart}</h1>
-          <p className="text-muted-foreground mb-6">{t.cart.emptyCartDesc}</p>
-          <Link href="/shop"><Button size="lg">{t.cart.shopNow}</Button></Link>
+        <div className="max-w-lg mx-auto px-4 py-24 text-center neu-pressed rounded-[3rem] mt-12">
+          <div className="w-24 h-24 neu-flat rounded-full flex items-center justify-center mx-auto mb-8">
+            <ShoppingBag className="h-10 w-10 text-muted-foreground/30" />
+          </div>
+          <h1 className="text-3xl font-serif font-bold mb-4 uppercase tracking-wide">{t.cart.emptyCart}</h1>
+          <p className="text-muted-foreground mb-8 text-sm">{t.cart.emptyCartDesc}</p>
+          <Link href="/shop"><button className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all">{t.cart.shopNow}</button></Link>
         </div>
       </StorefrontLayout>
     );
@@ -244,359 +393,458 @@ export default function CartPage() {
 
   return (
     <StorefrontLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with back */}
-        <div className="flex items-center gap-4 mb-6">
-          {step > 0 ? (
-            <button onClick={() => setStep((s) => (s - 1) as 0 | 1 | 2)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <BackArrow className="h-4 w-4" /> {t.cart.back}
-            </button>
-          ) : (
-            <button onClick={() => navigate("/shop")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <BackArrow className="h-4 w-4" /> {t.cart.backShop}
-            </button>
-          )}
-          <h1 className="text-2xl font-serif font-bold">{t.cart.title}</h1>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="flex flex-col mb-10">
+          <div className="flex items-center gap-4 mb-8">
+            {step > 0 ? (
+              <button onClick={() => setStep((s) => (s - 1) as 0 | 1 | 2)} className="w-10 h-10 neu-flat rounded-full flex items-center justify-center active:neu-pressed text-muted-foreground hover:text-foreground transition-all shrink-0">
+                <BackArrow className="h-4 w-4" />
+              </button>
+            ) : (
+              <button onClick={() => navigate("/shop")} className="w-10 h-10 neu-flat rounded-full flex items-center justify-center active:neu-pressed text-muted-foreground hover:text-foreground transition-all shrink-0">
+                <BackArrow className="h-4 w-4" />
+              </button>
+            )}
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold uppercase tracking-wide">{t.cart.title}</h1>
+          </div>
 
-        {/* Step indicator */}
-        <div className="flex items-center gap-2 mb-8">
-          {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${i === step ? "bg-primary text-primary-foreground" : i < step ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                {i < step ? "✓" : i + 1}
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 mb-2 pl-2">
+            {STEPS.map((s, i) => (
+              <div key={s} className="flex items-center gap-2">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  i === step ? "neu-flat text-primary" : i < step ? "neu-flat text-green-600" : "neu-pressed text-muted-foreground/50"
+                }`}>
+                  {i < step ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
+                </div>
+                <span className={`text-[10px] uppercase tracking-widest font-bold hidden sm:block ${i === step ? "text-foreground" : "text-muted-foreground"}`}>{s}</span>
+                {i < STEPS.length - 1 && <div className={`h-[2px] w-8 sm:w-16 rounded-full mx-2 ${i < step ? "bg-green-600" : "bg-muted"}`} />}
               </div>
-              <span className={`text-sm font-medium hidden sm:block ${i === step ? "text-foreground" : "text-muted-foreground"}`}>{s}</span>
-              {i < STEPS.length - 1 && <div className={`h-px w-8 sm:w-16 ${i < step ? "bg-green-500" : "bg-border"}`} />}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Left: Step content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-7 xl:col-span-8 space-y-8">
 
             {/* STEP 0: Cart items */}
             {step === 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center justify-between">
-                    <span>{t.cart.yourItems(items.length)}</span>
-                    <button onClick={clearCart} className="text-xs text-muted-foreground hover:text-destructive transition-colors">{t.cart.removeAll}</button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 divide-y divide-border">
+              <div className="neu-flat rounded-[2.5rem] p-6 sm:p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">{t.cart.yourItems(items.length)}</h2>
+                  <button onClick={clearCart} className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-destructive transition-colors">{t.cart.removeAll}</button>
+                </div>
+                <div className="space-y-6">
                   {items.map((item, i) => (
-                    <div key={i} className="p-4 flex gap-4">
-                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted shrink-0">
+                    <div key={i} className="neu-pressed rounded-[2rem] p-4 flex flex-col sm:flex-row gap-6">
+                      <div className="w-full sm:w-24 h-48 sm:h-24 rounded-[1.5rem] overflow-hidden bg-muted shrink-0 neu-flat p-1">
                         {item.productImageUrl ? (
-                          <img src={item.productImageUrl} alt={item.productName} className="w-full h-full object-cover" />
+                          <img 
+                            src={item.productImageUrl} 
+                            alt={item.productName} 
+                            crossOrigin="anonymous"
+                            className="w-full h-full object-cover rounded-xl" 
+                          />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary/30 to-accent/30">
+                          <div className="w-full h-full flex items-center justify-center rounded-xl bg-background">
                             <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">{item.productName}</p>
-                        {Object.entries(item.selectedVariants).length > 0 && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {Object.entries(item.selectedVariants).map(([k, v]) => `${k}: ${v}`).join(", ")}
-                          </p>
-                        )}
-                        {item.selectedAddons.length > 0 && (
-                          <p className="text-xs text-muted-foreground">{t.cart.addons}: {item.selectedAddons.join(", ")}</p>
-                        )}
-                        {item.customMessage && (
-                          <p className="text-xs text-muted-foreground italic">"{item.customMessage}"</p>
-                        )}
-                        <div className="flex items-center justify-between mt-3">
-                          <div className="flex items-center gap-1 border border-border rounded-lg p-0.5">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(i, item.quantity - 1)}>
+                      <div className="flex-1 min-w-0 py-1 flex flex-col">
+                        <p className="font-serif font-bold text-sm uppercase tracking-wide mb-1">{item.productName}</p>
+                        <div className="space-y-1 mb-4">
+                          {Object.entries(item.selectedVariants).length > 0 && (
+                            <p className="text-[10px] text-muted-foreground font-medium">
+                              {Object.entries(item.selectedVariants).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                            </p>
+                          )}
+                          {item.selectedAddons.length > 0 && (
+                            <p className="text-[10px] text-muted-foreground font-medium">{t.cart.addons}: {item.selectedAddons.join(", ")}</p>
+                          )}
+                          {item.customMessage && (
+                            <p className="text-[10px] text-muted-foreground italic mt-1">"{item.customMessage}"</p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className="flex items-center gap-3">
+                            <button className="w-8 h-8 neu-flat rounded-full flex items-center justify-center active:neu-pressed text-foreground hover:text-primary transition-all shrink-0" onClick={() => updateQuantity(i, item.quantity - 1)}>
                               <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-7 text-center text-sm font-medium">{item.quantity}</span>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => updateQuantity(i, item.quantity + 1)}>
+                            </button>
+                            <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                            <button className="w-8 h-8 neu-flat rounded-full flex items-center justify-center active:neu-pressed text-foreground hover:text-primary transition-all shrink-0" onClick={() => updateQuantity(i, item.quantity + 1)}>
                               <Plus className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-4">
                             <span className="font-bold text-sm text-primary">{formatCurrency(item.subtotal)}</span>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeItem(i)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <button className="w-8 h-8 neu-flat rounded-full flex items-center justify-center active:neu-pressed text-muted-foreground hover:text-destructive transition-all shrink-0" onClick={() => removeItem(i)}>
+                              <Trash2 className="h-3 w-3" />
+                            </button>
                           </div>
                         </div>
                       </div>
                     </div>
                   ))}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             {/* STEP 1: Delivery details form */}
             {step === 1 && (
-              <Card>
-                <CardHeader><CardTitle className="text-lg">{t.cart.deliveryDetails}</CardTitle></CardHeader>
-                <CardContent>
-                  <Form {...form}>
-                    <form id="checkout-form" onSubmit={form.handleSubmit(handlePlaceOrder)} className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="customerName" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.cart.fullName}</FormLabel>
-                            <FormControl><Input placeholder={t.cart.namePlaceholder} {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="customerPhone" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.cart.phone}</FormLabel>
-                            <FormControl><Input placeholder={t.cart.phonePlaceholder} {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                      </div>
-
-                      <FormField control={form.control} name="customerEmail" render={({ field }) => (
+              <div className="neu-flat rounded-[2.5rem] p-6 sm:p-10">
+                <h2 className="text-xl font-serif font-bold uppercase tracking-wide mb-8">{t.cart.deliveryDetails}</h2>
+                <Form {...form}>
+                  <form id="checkout-form" onSubmit={form.handleSubmit(handlePlaceOrder)} className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="customerName" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t.cart.email}</FormLabel>
-                          <FormControl><Input type="email" placeholder={t.cart.emailPlaceholder} {...field} /></FormControl>
-                          <FormMessage />
+                          <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">{t.cart.fullName}</label>
+                          <FormControl><input className="w-full neu-pressed rounded-full px-5 py-3 text-sm outline-none bg-transparent" placeholder={t.cart.namePlaceholder} {...field} /></FormControl>
+                          <FormMessage className="text-[10px] mt-2" />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="customerPhone" render={({ field }) => (
+                        <FormItem>
+                          <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">{t.cart.phone}</label>
+                          <FormControl><input className="w-full neu-pressed rounded-full px-5 py-3 text-sm outline-none bg-transparent" placeholder={t.cart.phonePlaceholder} {...field} /></FormControl>
+                          <FormMessage className="text-[10px] mt-2" />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <FormField control={form.control} name="customerEmail" render={({ field }) => (
+                      <FormItem>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">{t.cart.email}</label>
+                        <FormControl><input type="email" className="w-full neu-pressed rounded-full px-5 py-3 text-sm outline-none bg-transparent" placeholder={t.cart.emailPlaceholder} {...field} /></FormControl>
+                        <FormMessage className="text-[10px] mt-2" />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="deliveryAddress" render={({ field }) => (
+                      <FormItem>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">{t.cart.deliveryAddress}</label>
+                        <FormControl><textarea className="w-full neu-pressed rounded-[2rem] px-5 py-4 text-sm outline-none bg-transparent resize-none" placeholder={t.cart.addressPlaceholder} rows={3} {...field} /></FormControl>
+                        <FormMessage className="text-[10px] mt-2" />
+                      </FormItem>
+                    )} />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="deliveryDate" render={({ field }) => (
+                        <FormItem>
+                          <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">{t.cart.deliveryDate}</label>
+                          <FormControl>
+                            <input
+                              type="date"
+                              min={minDate}
+                              className="w-full neu-pressed rounded-full px-5 py-3 text-sm outline-none bg-transparent"
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                if (blackoutSet.has(e.target.value)) {
+                                  toast({ title: t.cart.dateUnavailable, description: t.cart.dateBlackout, variant: "destructive" });
+                                }
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-[10px] mt-2" />
+                          {selectedDate && capacity && !capacity.available && (
+                            <p className="text-[10px] text-destructive flex items-center gap-1 mt-2 font-bold uppercase tracking-widest">
+                              <AlertCircle className="h-3 w-3" /> {capacity.isBlackout ? t.cart.dateBlackout : t.cart.dateFull}
+                            </p>
+                          )}
+                          {selectedDate && capacity?.available && (
+                            <p className="text-[10px] text-green-600 flex items-center gap-1 mt-2 font-bold uppercase tracking-widest">
+                              <CheckCircle2 className="h-3 w-3" /> {t.cart.slotsRemaining(capacity.remainingSlots)}
+                            </p>
+                          )}
                         </FormItem>
                       )} />
 
-                      <FormField control={form.control} name="deliveryAddress" render={({ field }) => (
+                      <FormField control={form.control} name="deliveryTimeSlot" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t.cart.deliveryAddress}</FormLabel>
-                          <FormControl><Textarea placeholder={t.cart.addressPlaceholder} rows={2} {...field} /></FormControl>
-                          <FormMessage />
+                          <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">{t.cart.timeSlot}</label>
+                          <FormControl>
+                            <select
+                              {...field}
+                              className="w-full neu-pressed rounded-full px-5 py-3 text-sm outline-none bg-transparent appearance-none"
+                            >
+                              <option value="" className="bg-background">{t.cart.anyTime}</option>
+                              {TIME_SLOTS.map((slot) => (
+                                <option key={slot} value={slot} className="bg-background">{slot}</option>
+                              ))}
+                            </select>
+                          </FormControl>
                         </FormItem>
                       )} />
+                    </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="deliveryDate" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.cart.deliveryDate}</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="date"
-                                min={minDate}
-                                {...field}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  if (blackoutSet.has(e.target.value)) {
-                                    toast({ title: t.cart.dateUnavailable, description: t.cart.dateBlackout, variant: "destructive" });
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                            {selectedDate && capacity && !capacity.available && (
-                              <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-                                <AlertCircle className="h-3 w-3" />
-                                {capacity.isBlackout ? t.cart.dateBlackout : t.cart.dateFull}
-                              </p>
-                            )}
-                            {selectedDate && capacity?.available && (
-                              <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                                <CheckCircle2 className="h-3 w-3" />
-                                {t.cart.slotsRemaining(capacity.remainingSlots)}
-                              </p>
-                            )}
-                          </FormItem>
-                        )} />
-
-                        <FormField control={form.control} name="deliveryTimeSlot" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t.cart.timeSlot}</FormLabel>
-                            <FormControl>
-                              <select
-                                {...field}
-                                className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                <option value="">{t.cart.anyTime}</option>
-                                {TIME_SLOTS.map((slot) => (
-                                  <option key={slot} value={slot}>{slot}</option>
-                                ))}
-                              </select>
-                            </FormControl>
-                          </FormItem>
-                        )} />
-                      </div>
-
-                      <FormField control={form.control} name="notes" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t.cart.notes}</FormLabel>
-                          <FormControl><Textarea placeholder={t.cart.notesPlaceholder} rows={2} {...field} /></FormControl>
-                        </FormItem>
-                      )} />
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
+                    <FormField control={form.control} name="notes" render={({ field }) => (
+                      <FormItem>
+                        <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">{t.cart.notes}</label>
+                        <FormControl><textarea className="w-full neu-pressed rounded-[2rem] px-5 py-4 text-sm outline-none bg-transparent resize-none" placeholder={t.cart.notesPlaceholder} rows={2} {...field} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </form>
+                </Form>
+              </div>
             )}
 
             {/* STEP 2: Confirm order */}
             {step === 2 && (
-              <Card>
-                <CardHeader><CardTitle className="text-lg">{t.cart.orderReview}</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-muted/50 rounded-xl p-4 space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.name}</span><span className="font-medium">{formValues.customerName}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.phone2}</span><span className="font-medium">{formValues.customerPhone}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.date}</span><span className="font-medium">{formValues.deliveryDate}</span></div>
-                    {formValues.deliveryTimeSlot && <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.time}</span><span className="font-medium">{formValues.deliveryTimeSlot}</span></div>}
-                    <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.address}</span><span className="font-medium text-right max-w-xs">{formValues.deliveryAddress}</span></div>
-                    {formValues.notes && <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.note}</span><span className="font-medium">{formValues.notes}</span></div>}
+              <div className="neu-flat rounded-[2.5rem] p-6 sm:p-10">
+                <h2 className="text-xl font-serif font-bold uppercase tracking-wide mb-8">{t.cart.orderReview}</h2>
+                <Form {...form}>
+                  <div className="space-y-8">
+                  <div className="neu-pressed rounded-[2rem] p-6 space-y-4 text-sm">
+                    <div className="flex justify-between"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.cart.name}</span><span className="font-bold">{formValues.customerName}</span></div>
+                    <div className="flex justify-between"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.cart.phone2}</span><span className="font-bold">{formValues.customerPhone}</span></div>
+                    <div className="flex justify-between"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.cart.date}</span><span className="font-bold">{formValues.deliveryDate}</span></div>
+                    {formValues.deliveryTimeSlot && <div className="flex justify-between"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.cart.time}</span><span className="font-bold">{formValues.deliveryTimeSlot}</span></div>}
+                    <div className="flex justify-between"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.cart.address}</span><span className="font-bold text-right max-w-xs">{formValues.deliveryAddress}</span></div>
+                    {formValues.notes && <div className="flex justify-between mt-4 border-t border-muted pt-4"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.cart.note}</span><span className="font-medium italic text-right max-w-xs">{formValues.notes}</span></div>}
                   </div>
 
                   <div>
-                    <p className="text-sm font-semibold mb-2">{t.cart.orderItems}</p>
-                    <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4 pl-2">{t.cart.orderItems}</p>
+                    <div className="neu-pressed rounded-[2rem] p-6 space-y-3">
                       {items.map((item, i) => (
-                        <div key={i} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">{item.productName} × {item.quantity}</span>
-                          <span className="font-medium">{formatCurrency(item.subtotal)}</span>
+                        <div key={i} className="flex justify-between text-sm items-center">
+                          <span className="font-bold text-muted-foreground">{item.productName} × {item.quantity}</span>
+                          <span className="font-bold text-primary">{formatCurrency(item.subtotal)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm">
-                    <Clock className="h-4 w-4 text-blue-600 shrink-0" />
-                    <p className="text-blue-700 dark:text-blue-400">{t.cart.leadTime}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 neu-flat rounded-[1.5rem] p-4 text-xs">
+                      <div className="w-8 h-8 neu-pressed rounded-full flex items-center justify-center shrink-0">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                      <p className="font-medium text-muted-foreground">{t.cart.leadTime}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3 neu-flat rounded-[1.5rem] p-4 text-xs">
+                      <div className="w-8 h-8 neu-pressed rounded-full flex items-center justify-center shrink-0">
+                        <MessageCircle className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                      <p className="font-medium text-muted-foreground">{t.cart.whatsappNote}</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm">
-                    <MessageCircle className="h-4 w-4 text-green-600 shrink-0" />
-                    <p className="text-green-700 dark:text-green-400">{t.cart.whatsappNote}</p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4 pl-2">Select Payment Method</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      {[
+                        { id: 'cod', label: 'COD', color: 'bg-slate-100' },
+                        { id: 'jazzcash', label: 'JazzCash', color: 'bg-red-50 text-red-600' },
+                        { id: 'easypaisa', label: 'EasyPaisa', color: 'bg-green-50 text-green-600' },
+                        { id: 'bank', label: 'Bank Transfer', color: 'bg-blue-50 text-blue-600' }
+                      ].map((pm) => (
+                        <button
+                          key={pm.id}
+                          type="button"
+                          onClick={() => form.setValue('paymentMethod', pm.id as any)}
+                          className={`p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all ${
+                            formValues.paymentMethod === pm.id ? 'border-primary bg-primary/5' : 'border-transparent neu-flat'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[8px] ${pm.color}`}>
+                            {pm.id.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider">{pm.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* Payment Details Section */}
+                  {formValues.paymentMethod !== 'cod' && (
+                    <div className="neu-pressed rounded-[2rem] p-6 space-y-6">
+                      <div className="space-y-2">
+                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary">Transfer Details</h4>
+                        {formValues.paymentMethod === 'jazzcash' && <p className="text-sm font-medium">JazzCash: {paymentSettings.jazzcash}</p>}
+                        {formValues.paymentMethod === 'easypaisa' && <p className="text-sm font-medium">EasyPaisa: {paymentSettings.easypaisa}</p>}
+                        {formValues.paymentMethod === 'bank' && <p className="text-sm font-medium">Bank: {paymentSettings.bank}</p>}
+                        <p className="text-[10px] text-muted-foreground italic">Please transfer the total amount and provide the details below.</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="transactionId" render={({ field }) => (
+                          <FormItem>
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-2 block">Transaction ID / TID</label>
+                            <FormControl><input className="w-full neu-flat rounded-full px-5 py-3 text-sm outline-none bg-background" placeholder="Enter TID" {...field} /></FormControl>
+                          </FormItem>
+                        )} />
+                        
+                        <FormField control={form.control} name="paymentScreenshot" render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground block">Upload Screenshot</label>
+                            <div className="relative">
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      field.onChange(reader.result as string);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                              <div className="w-full neu-flat rounded-full px-5 py-3 text-xs font-bold text-muted-foreground flex items-center justify-between">
+                                <span>{field.value ? "✅ Image Selected" : "Choose File"}</span>
+                                <Camera className="h-4 w-4" />
+                              </div>
+                            </div>
+                            {field.value && (
+                              <div className="mt-4 p-2 neu-pressed rounded-2xl overflow-hidden">
+                                <img src={field.value} className="w-full h-32 object-cover rounded-xl" alt="Payment Proof" />
+                              </div>
+                            )}
+                            <FormMessage className="text-[10px]" />
+                          </FormItem>
+                        )} />
+                      </div>
+                    </div>
+                  )}
+                  </div>
+                </Form>
+                
+                {!currentUser && (
+                  <div className="mt-8 p-6 neu-flat rounded-[2rem] bg-primary/5 border border-primary/10 flex items-start gap-4">
+                    <div className="w-10 h-10 neu-flat rounded-full flex items-center justify-center shrink-0">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm mb-1">{isUrdu ? "کیا آپ اپنے آرڈر کو ٹریک کرنا چاہتے ہیں؟" : "Want to track your order?"}</h4>
+                      <p className="text-xs text-muted-foreground mb-3">{isUrdu ? "آرڈر کی صورتحال جاننے کے لیے لاگ ان کریں۔ یہ بالکل آپشنل ہے!" : "Login to save this order to your account. It's completely optional!"}</p>
+                      <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase font-bold tracking-widest rounded-full" onClick={() => navigate("/auth")}>
+                        {isUrdu ? "لاگ ان یا رجسٹر کریں" : "Login / Register"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Right: Order summary (always visible) */}
-          <div className="space-y-4">
-            <Card className="sticky top-20">
-              <CardHeader><CardTitle className="text-lg">{t.cart.orderSummary}</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2 text-sm">
+          {/* Right: Order summary */}
+          <div className="lg:col-span-5 xl:col-span-4 space-y-6">
+            <div className="neu-flat rounded-[2.5rem] p-6 sm:p-8 sticky top-24">
+              <h2 className="text-xl font-serif font-bold uppercase tracking-wide mb-6">{t.cart.orderSummary}</h2>
+              <div className="space-y-6">
+                <div className="space-y-3 text-sm font-bold text-muted-foreground">
                   {items.map((item, i) => (
                     <div key={i} className="flex justify-between">
-                      <span className="text-muted-foreground">{item.productName} × {item.quantity}</span>
-                      <span>{formatCurrency(item.subtotal)}</span>
+                      <span className="truncate pr-4">{item.productName} × {item.quantity}</span>
+                      <span className="shrink-0">{formatCurrency(item.subtotal)}</span>
                     </div>
                   ))}
-                  <Separator />
-                  <div className="flex justify-between"><span className="text-muted-foreground">{t.cart.subtotal}</span><span>{formatCurrency(subtotal)}</span></div>
+                  <div className="h-px bg-muted/50 my-4" />
+                  <div className="flex justify-between"><span className="text-[10px] uppercase tracking-widest">{t.cart.subtotal}</span><span>{formatCurrency(subtotal)}</span></div>
                   {appliedCoupon && (
-                    <div className="flex justify-between text-green-600">
-                      <span className="flex items-center gap-1">
+                    <div className="flex justify-between text-primary">
+                      <span className="flex items-center gap-2">
                         <Tag className="h-3 w-3" /> {appliedCoupon.code}
-                        <button onClick={() => setAppliedCoupon(null)} className="text-muted-foreground hover:text-destructive ml-1 text-xs">×</button>
+                        <button onClick={() => setAppliedCoupon(null)} className="w-5 h-5 neu-flat rounded-full flex items-center justify-center text-[10px] hover:text-destructive active:neu-pressed ml-2">×</button>
                       </span>
                       <span>-{formatCurrency(discount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-muted-foreground text-xs">
-                    <span className="flex items-center gap-1">🚚 {t.cart.deliveryCharges}</span>
-                    <span>{formatCurrency(DELIVERY_CHARGES)}</span>
+                  <div className="flex justify-between">
+                    <span className="text-[10px] uppercase tracking-widest">{t.cart.deliveryCharges}</span>
+                    <span>{formatCurrency(deliveryCharges)}</span>
                   </div>
-                  <Separator />
-                  <div className="flex justify-between font-bold text-base">
-                    <span>{t.cart.total}</span>
-                    <span className="text-primary">{formatCurrency(grandTotal)}</span>
+                  <div className="h-px bg-muted/50 my-4" />
+                  <div className="flex justify-between text-lg text-foreground">
+                    <span className="font-serif uppercase tracking-wide">{t.cart.total}</span>
+                    <span className="text-primary font-bold">{formatCurrency(grandTotal)}</span>
                   </div>
                 </div>
 
                 {/* Coupon */}
                 {step < 2 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">{t.cart.couponCode}</Label>
-                    <div className="flex gap-2">
-                      <Input
+                  <div className="space-y-3 pt-4">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground pl-2">{t.cart.couponCode}</label>
+                    <div className="flex gap-3">
+                      <input
                         placeholder="SAVE10"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        className="flex-1"
+                        className="flex-1 neu-pressed rounded-full px-4 text-sm font-bold outline-none bg-transparent uppercase"
                         disabled={!!appliedCoupon}
                       />
                       {appliedCoupon ? (
-                        <Button variant="outline" size="sm" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>
+                        <button className="neu-flat px-4 py-3 rounded-full text-xs font-bold uppercase tracking-widest active:neu-pressed" onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}>
                           {t.cart.remove}
-                        </Button>
+                        </button>
                       ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
+                        <button
+                          className="neu-flat px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest active:neu-pressed disabled:opacity-50"
                           onClick={() => validateCoupon.mutate({ data: { code: couponCode, orderAmount: subtotal } })}
                           disabled={!couponCode || validateCoupon.isPending}
                         >
                           {t.cart.apply}
-                        </Button>
+                        </button>
                       )}
                     </div>
                     {appliedCoupon && (
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        <Badge variant="outline" className="text-green-600 border-green-300 text-xs">{appliedCoupon.code}</Badge> {t.cart.couponApplied}
+                      <p className="text-[10px] text-primary flex items-center gap-1 font-bold uppercase tracking-widest pl-2">
+                        <CheckCircle2 className="h-3 w-3" /> {appliedCoupon.code} {t.cart.couponApplied}
                       </p>
                     )}
                   </div>
                 )}
 
                 {/* Step CTA buttons */}
-                {step === 0 && (
-                  <Button className="w-full gap-2" size="lg" onClick={() => setStep(1)}>
-                    {t.cart.nextStep}
-                    {!isUrdu && <ArrowRight className="h-4 w-4" />}
-                  </Button>
-                )}
+                <div className="pt-6">
+                  {step === 0 && (
+                    <button className="w-full neu-flat rounded-full py-4 text-xs font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all flex items-center justify-center gap-2" onClick={() => setStep(1)}>
+                      {t.cart.nextStep} {!isUrdu && <ArrowRight className="h-4 w-4" />}
+                    </button>
+                  )}
 
-                {step === 1 && (
-                  <Button
-                    className="w-full gap-2"
-                    size="lg"
-                    onClick={async () => {
-                      const valid = await form.trigger();
-                      if (valid) {
-                        if (isDateDisabled(formValues.deliveryDate)) {
-                          toast({ title: t.cart.dateUnavailable, variant: "destructive" });
-                          return;
+                  {step === 1 && (
+                    <button
+                      className="w-full neu-flat rounded-full py-4 text-xs font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all flex items-center justify-center gap-2"
+                      onClick={async () => {
+                        const valid = await form.trigger();
+                        if (valid) {
+                          if (isDateDisabled(formValues.deliveryDate)) { toast({ title: t.cart.dateUnavailable, variant: "destructive" }); return; }
+                          if (capacity && !capacity.available) { toast({ title: t.cart.dateFull, variant: "destructive" }); return; }
+                          setStep(2);
                         }
-                        if (capacity && !capacity.available) {
-                          toast({ title: t.cart.dateFull, variant: "destructive" });
-                          return;
-                        }
-                        setStep(2);
-                      }
-                    }}
-                  >
-                    {t.cart.reviewOrder}
-                    {!isUrdu && <ArrowRight className="h-4 w-4" />}
-                  </Button>
-                )}
+                      }}
+                    >
+                      {t.cart.reviewOrder} {!isUrdu && <ArrowRight className="h-4 w-4" />}
+                    </button>
+                  )}
 
-                {step === 2 && (
-                  <Button
-                    className="w-full gap-2 bg-green-600 hover:bg-green-700"
-                    size="lg"
-                    disabled={createOrder.isPending}
-                    onClick={form.handleSubmit(handlePlaceOrder)}
-                    data-testid="button-checkout"
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                    {createOrder.isPending ? t.cart.sending : t.cart.sendWhatsapp}
-                  </Button>
-                )}
+                  {step === 2 && (
+                    <button
+                      className="w-full neu-flat rounded-full py-4 text-xs font-bold uppercase tracking-widest text-primary active:neu-pressed transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
+                      disabled={createOrder.isPending}
+                      onClick={form.handleSubmit(handlePlaceOrder)}
+                      data-testid="button-checkout"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      {createOrder.isPending ? t.cart.sending : t.cart.sendWhatsapp}
+                    </button>
+                  )}
+                </div>
 
-                <p className="text-xs text-center text-muted-foreground">
+                <p className="text-[10px] text-center font-bold uppercase tracking-widest text-muted-foreground pt-4">
                   {t.cart.whatsappFooter}
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,10 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, Moon, Sun, Menu, X, Shield, MapPin, MessageCircle, Languages } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ShoppingCart, Moon, Sun, Menu, X, Shield, MapPin, MessageCircle, Languages, User } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useCartStore } from "@/stores/cart";
-import { useState } from "react";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { useState, useEffect } from "react";
+import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
 import { Logo } from "@/components/Logo";
 
 export function StorefrontLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +13,16 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [location] = useLocation();
   const { t, toggleLang, isUrdu } = useLanguage();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.authenticated) setUser(data.user);
+      })
+      .catch(() => {/* API not available - guest mode */});
+  }, []);
 
   const navLinks = [
     { href: "/", label: t.nav.home },
@@ -21,126 +30,164 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2.5">
-              <Logo size={38} className="text-primary shrink-0" />
-              <span className={`font-bold text-primary tracking-tight text-base leading-tight ${isUrdu ? "font-serif" : "font-sans"}`}>
-                {isUrdu ? "مرحبا سویٹس اینڈ بیکرز" : "Marhaba Sweets & Bakers"}
+    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/20">
+      {/* Neumorphic Floating Header */}
+      <div className="pt-6 pb-2 px-4 sm:px-6 lg:px-8 max-w-[1400px] w-full mx-auto">
+        <header className="neu-flat rounded-full px-6 py-4 flex items-center justify-between z-50 relative">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 neu-pressed rounded-full flex items-center justify-center text-primary">
+              <Logo size={24} />
+            </div>
+            <div className="flex flex-col">
+              <span className={`font-serif font-bold text-foreground text-lg leading-tight tracking-wide`}>
+                {isUrdu ? "مرحبا سویٹس اینڈ بیکرز" : "MARHABA BAKERS"}
               </span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Baking Passion</span>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-xs uppercase tracking-widest font-bold px-5 py-2.5 rounded-full transition-all ${
+                  location === link.href ? "neu-pressed text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link href="/admin" className="text-xs uppercase tracking-widest font-bold px-5 py-2.5 rounded-full transition-all text-muted-foreground hover:text-foreground inline-flex items-center gap-2">
+               {t.nav.admin}
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-4">
+            {/* Language switcher */}
+            <button
+              onClick={toggleLang}
+              className="hidden sm:flex text-xs uppercase tracking-widest font-bold px-4 py-2.5 rounded-full neu-flat transition-transform active:scale-95 text-foreground items-center gap-2"
+              aria-label="Switch language"
+            >
+              <Languages className="h-4 w-4" />
+              {t.nav.langLabel}
+            </button>
+
+            <button onClick={toggleTheme} aria-label="Toggle theme" className="w-10 h-10 flex items-center justify-center rounded-full neu-flat transition-transform active:scale-95 text-foreground">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+
+            <Link href="/cart" className="neu-flat rounded-full px-5 py-2.5 flex items-center gap-3 transition-transform active:scale-95 group">
+              <span className="text-xs uppercase tracking-widest font-bold text-foreground group-hover:text-primary transition-colors">{t.nav.cart}</span>
+              <div className="relative">
+                <ShoppingCart className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-2.5 -right-2.5 text-[10px] font-bold text-primary">
+                    {cartCount}
+                  </span>
+                )}
+              </div>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    location === link.href ? "text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <Link href="/admin" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5">
-                <Shield className="h-3.5 w-3.5" /> {t.nav.admin}
-              </Link>
-            </nav>
+            <Link href={user ? "/account/orders" : "/auth"} className="neu-flat rounded-full px-5 py-2.5 flex items-center gap-3 transition-transform active:scale-95 group">
+              <span className="text-xs uppercase tracking-widest font-bold text-foreground group-hover:text-primary transition-colors">
+                {user ? (isUrdu ? "میرا اکاؤنٹ" : "Account") : (isUrdu ? "لاگ ان" : "Login")}
+              </span>
+              <User className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
+            </Link>
 
-            <div className="flex items-center gap-1.5">
-              {/* Language switcher */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleLang}
-                className="gap-1.5 rounded-full text-xs font-semibold px-3 border border-border hover:border-primary/40"
-                aria-label="Switch language"
-                title={isUrdu ? "Switch to English" : "اردو میں بدلیں"}
-              >
-                <Languages className="h-3.5 w-3.5 shrink-0" />
-                {t.nav.langLabel}
-              </Button>
-
-              <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme" className="rounded-full">
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-
-              <Link href="/cart">
-                <Button variant="outline" size="sm" className="relative gap-2 rounded-full border-primary/30 hover:border-primary">
-                  <ShoppingCart className="h-4 w-4" />
-                  <span className="hidden sm:inline text-sm font-medium">{t.nav.cart}</span>
-                  {cartCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-sm">
-                      {cartCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-
-              <Button variant="ghost" size="icon" className="md:hidden rounded-full" onClick={() => setMenuOpen(!menuOpen)}>
-                {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </div>
+            <button className="md:hidden w-10 h-10 flex items-center justify-center rounded-full neu-flat transition-transform active:scale-95 text-foreground" onClick={() => setMenuOpen(!menuOpen)}>
+              {menuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
           </div>
-        </div>
+        </header>
 
+        {/* Mobile Navigation Dropdown */}
         {menuOpen && (
-          <div className="md:hidden border-t border-border bg-background/98 px-4 py-4 flex flex-col gap-3">
+          <div className="md:hidden mt-4 neu-flat rounded-3xl p-4 flex flex-col gap-2 relative z-40">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
-                className={`text-sm font-medium py-1 ${location === link.href ? "text-primary" : "text-muted-foreground"}`}
+                className={`text-sm uppercase tracking-widest font-bold px-5 py-3 rounded-2xl transition-all ${
+                  location === link.href ? "neu-pressed text-primary" : "text-muted-foreground active:neu-pressed"
+                }`}
               >
                 {link.label}
               </Link>
             ))}
             <Link href="/admin" onClick={() => setMenuOpen(false)}
-              className="text-sm font-medium text-muted-foreground py-1 inline-flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5" /> {t.nav.admin}
+              className="text-sm uppercase tracking-widest font-bold px-5 py-3 rounded-2xl transition-all text-muted-foreground active:neu-pressed flex items-center gap-2">
+              <Shield className="h-4 w-4" /> {t.nav.admin}
             </Link>
+            <Link href={user ? "/account/orders" : "/auth"} onClick={() => setMenuOpen(false)}
+              className="text-sm uppercase tracking-widest font-bold px-5 py-3 rounded-2xl transition-all text-muted-foreground active:neu-pressed flex items-center gap-2">
+              <User className="h-4 w-4" /> {user ? (isUrdu ? "میرا اکاؤنٹ" : "My Account") : (isUrdu ? "لاگ ان" : "Login")}
+            </Link>
+            <button
+              onClick={() => { toggleLang(); setMenuOpen(false); }}
+              className="text-sm uppercase tracking-widest font-bold px-5 py-3 rounded-2xl transition-all text-muted-foreground active:neu-pressed flex items-center gap-2 text-start"
+            >
+              <Languages className="h-4 w-4" /> {t.nav.langLabel}
+            </button>
           </div>
         )}
-      </header>
+      </div>
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 w-full max-w-[1400px] mx-auto">{children}</main>
 
-      <footer className="border-t border-border bg-card mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2.5 mb-3">
-                <Logo size={34} className="text-primary shrink-0" />
-                <span className="font-bold text-foreground text-sm">{t.footer.brand}</span>
+      <div className="px-4 sm:px-6 lg:px-8 max-w-[1400px] w-full mx-auto pb-6 mt-16">
+        <footer className="neu-flat rounded-3xl p-8 lg:p-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 neu-pressed rounded-full flex items-center justify-center text-primary">
+                  <Logo size={24} />
+                </div>
+                <span className={`font-serif font-bold text-foreground text-lg leading-tight tracking-wide`}>
+                  {isUrdu ? "مرحبا سویٹس اینڈ بیکرز" : "MARHABA BAKERS"}
+                </span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{t.footer.tagline}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">{t.footer.tagline}</p>
             </div>
 
-            <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-sm text-foreground mb-1">{t.footer.location}</p>
+            <div>
+              <p className="font-bold text-xs uppercase tracking-widest text-foreground mb-4">{t.footer.location}</p>
+              <div className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{t.footer.address}</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-3">
-              <MessageCircle className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-sm text-foreground mb-1">{t.footer.orderTitle}</p>
-                <p className="text-sm text-muted-foreground">{t.footer.orderDesc}</p>
-                <p className="text-sm text-muted-foreground">{t.footer.deliveryCharges}</p>
+            <div>
+              <p className="font-bold text-xs uppercase tracking-widest text-foreground mb-4">{t.footer.orderTitle}</p>
+              <div className="flex items-start gap-3">
+                <MessageCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{t.footer.orderDesc}</p>
+                  <p className="text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded inline-block neu-pressed">{t.footer.deliveryCharges}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-border pt-6 text-center">
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} {t.footer.copyright}
-            </p>
+          <div className="mt-12 pt-6 border-t border-muted/50 text-center sm:text-start flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">
+                © {new Date().getFullYear()} {t.footer.copyright}
+              </p>
+              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.2em] font-bold">
+                Developed by <a href="https://codehubb.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">CODEHUBB.com</a>
+              </p>
+            </div>
+            <div className="flex gap-4">
+               {navLinks.map((link) => (
+                 <Link key={link.href} href={link.href} className="text-xs text-muted-foreground hover:text-foreground font-medium uppercase tracking-widest">{link.label}</Link>
+               ))}
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }

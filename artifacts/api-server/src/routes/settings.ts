@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { storeSettingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const router = Router();
@@ -16,6 +16,9 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   deliveryCharges: "300",
   minLeadHours: "24",
   dailyOrderLimit: "20",
+  jazzcashDetails: "0300-1234567 (Ali Ahmed)",
+  easypaisaDetails: "0321-7654321 (Ali Ahmed)",
+  bankDetails: "HBL: 1234-5678-9012-3456 (Marhaba Bakers)",
 };
 
 async function getSetting(key: string): Promise<string> {
@@ -27,24 +30,17 @@ async function getSetting(key: string): Promise<string> {
 }
 
 async function setSetting(key: string, value: string): Promise<void> {
-  const existing = await db
-    .select()
-    .from(storeSettingsTable)
-    .where(eq(storeSettingsTable.key, key));
-
-  if (existing.length > 0) {
-    await db
-      .update(storeSettingsTable)
-      .set({ value, updatedAt: new Date() })
-      .where(eq(storeSettingsTable.key, key));
-  } else {
-    await db.insert(storeSettingsTable).values({ key, value });
-  }
+  await db.insert(storeSettingsTable)
+    .values({ key, value, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: storeSettingsTable.key,
+      set: { value, updatedAt: new Date() }
+    });
 }
 
 router.get("/settings/public", async (_req, res) => {
   try {
-    const keys = ["whatsappNumber", "storeName", "storeTagline", "storeAddress", "deliveryCharges", "minLeadHours", "dailyOrderLimit"];
+    const keys = ["whatsappNumber", "storeName", "storeTagline", "storeAddress", "deliveryCharges", "minLeadHours", "dailyOrderLimit", "jazzcashDetails", "easypaisaDetails", "bankDetails"];
     const settings: Record<string, string> = {};
     for (const key of keys) {
       settings[key] = await getSetting(key);
@@ -77,30 +73,21 @@ router.patch("/admin/settings", async (req, res) => {
     return;
   }
 
-  const schema = z.object({
-    whatsappNumber: z.string().optional(),
-    storeName: z.string().optional(),
-    storeTagline: z.string().optional(),
-    storeAddress: z.string().optional(),
-    minLeadHours: z.string().optional(),
-    dailyOrderLimit: z.string().optional(),
-  });
-
-  const parsed = schema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid data" });
-    return;
-  }
-
-  for (const [key, value] of Object.entries(parsed.data)) {
-    if (value !== undefined) {
-      await setSetting(key, value);
+  try {
+    const data = req.body;
+    for (const [key, value] of Object.entries(data)) {
+      if (typeof value === "string") {
+        await setSetting(key, value);
+      }
     }
-  }
 
-  const rows = await db.select().from(storeSettingsTable);
-  const stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  res.json({ ...DEFAULT_SETTINGS, ...stored });
+    const rows = await db.select().from(storeSettingsTable);
+    const stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    const response = { ...DEFAULT_SETTINGS, ...stored };
+    res.json(response);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

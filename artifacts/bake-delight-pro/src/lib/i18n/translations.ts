@@ -44,6 +44,14 @@ export type Translation = {
     ctaBtn: string;
     from: string;
     orderNow: string;
+    feature1Title: string;
+    feature1Desc: string;
+    feature2Title: string;
+    feature2Desc: string;
+    ourBakery: string;
+    addToBag: string;
+    heroTitleAura: string;
+    exploreBtn: string;
   };
   shop: {
     title: string;
@@ -209,6 +217,14 @@ const en: Translation = {
     ctaBtn: "Start Ordering Now",
     from: "from",
     orderNow: "Order",
+    feature1Title: "Handmade",
+    feature1Desc: "Slow Fermented,\nHandcrafted Loaves",
+    feature2Title: "Quick Delivery",
+    feature2Desc: "Fresh Bakes to Your\nDoor in Hours",
+    ourBakery: "Our Bakery",
+    addToBag: "Add to Bag",
+    heroTitleAura: "Artisanal Breads,\nCrafted With Care.",
+    exploreBtn: "Explore Collection",
   },
   shop: {
     title: "Our Bakery",
@@ -374,6 +390,14 @@ const ur: Translation = {
     ctaBtn: "ابھی آرڈر شروع کریں",
     from: "سے",
     orderNow: "آرڈر کریں",
+    feature1Title: "ہاتھ سے تیار",
+    feature1Desc: "آہستہ خمیر شدہ،\nمحبت سے تیار روٹیاں",
+    feature2Title: "تیز ڈیلیوری",
+    feature2Desc: "تازہ بیکری آئٹمز\nچند گھنٹوں میں آپ کے دروازے پر",
+    ourBakery: "ہماری بیکری",
+    addToBag: "بیگ میں شامل کریں",
+    heroTitleAura: "روایتی انداز،\nمحبت سے تیار کردہ۔",
+    exploreBtn: "ہماری کلیکشن دیکھیں",
   },
   shop: {
     title: "ہماری بیکری",
