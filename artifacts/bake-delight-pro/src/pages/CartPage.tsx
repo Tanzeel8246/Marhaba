@@ -66,6 +66,7 @@ export default function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placedOrderData, setPlacedOrderData] = useState<CheckoutForm | null>(null);
+  const [placedOrderItems, setPlacedOrderItems] = useState<typeof items>([]);
   const [whatsappNumber, setWhatsappNumber] = useState("923001234567");
   const [paymentSettings, setPaymentSettings] = useState({
     jazzcash: "0300-1234567 (Ali Ahmed)",
@@ -265,6 +266,7 @@ export default function CartPage() {
     window.open(waUrl, "_blank");
 
     setPlacedOrderData(data);
+    setPlacedOrderItems(currentItems);
     setOrderPlaced(true);
     clearCart();
 
@@ -307,7 +309,7 @@ export default function CartPage() {
               <div className="flex justify-between"><span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t.cart.date}</span> <span className="font-bold">{placedOrderData.deliveryDate}</span></div>
               
               <div className="py-2 border-y border-dashed border-muted/50 space-y-3">
-                {items.map((item, i) => (
+                {placedOrderItems.map((item, i) => (
                   <div key={i} className="flex gap-3 items-start border-b border-muted/20 pb-2 last:border-0">
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0 border border-primary/10">
                       {item.productImageUrl ? (
@@ -345,20 +347,36 @@ export default function CartPage() {
             {navigator.share && (
               <button 
                 onClick={async () => {
-                  if (!receiptRef.current) return;
+                  if (!placedOrderData) return;
                   try {
-                    const canvas = await window.html2canvas(receiptRef.current, { useCORS: true, scale: 2 });
-                    canvas.toBlob(async (blob: Blob | null) => {
-                      if (!blob) return;
-                      const file = new File([blob], 'Marhaba_Bakers_Receipt.png', { type: 'image/png' });
-                      await navigator.share({
-                        files: [file],
-                        title: 'Order Receipt',
-                        text: 'My Order Receipt from Marhaba Bakers'
-                      });
-                    });
+                    const firstItem = placedOrderItems[0];
+                    let file: File | null = null;
+                    
+                    if (firstItem && firstItem.productImageUrl) {
+                      try {
+                        const response = await fetch(firstItem.productImageUrl);
+                        const blob = await response.blob();
+                        file = new File([blob], 'product.jpg', { type: 'image/jpeg' });
+                      } catch (e) {
+                        console.error("Failed to fetch product image for share:", e);
+                      }
+                    }
+                    
+                    const msg = generateWhatsappMessage(placedOrderData, placedOrderItems);
+                    
+                    const shareData: ShareData = {
+                      title: 'Order Details',
+                      text: msg
+                    };
+                    
+                    if (file) {
+                      shareData.files = [file];
+                    }
+                    
+                    await navigator.share(shareData);
                   } catch (err) {
                     console.error("Share error:", err);
+                    toast({ title: "❌ Share Failed", variant: "destructive" });
                   }
                 }}
                 className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-green-600 hover:bg-green-50 active:neu-pressed transition-all w-full flex items-center justify-center gap-2"
