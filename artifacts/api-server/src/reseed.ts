@@ -151,13 +151,23 @@ async function reseed() {
 
     // ── Cookies & Biscuits (3) ──
     {
-      name: "Classic Butter Cookies (12 pack)",
-      slug: "butter-cookies-12",
+      name: "Classic Butter Cookies | مکھن کے بسکٹ",
+      slug: "butter-cookies",
       description: "Buttery melt-in-your-mouth cookies.",
-      basePrice: "1200.00",
+      basePrice: "600.00",
       categoryId: cookies.id,
       imageUrls: JSON.stringify(["/images/butter_cookies_1778333992085.webp"]),
-      variants: JSON.stringify([]),
+      variants: JSON.stringify([
+        { 
+          name: "Weight", 
+          type: "weight", 
+          options: [
+            { label: "0.5 KG", priceAdjustment: 0 },
+            { label: "1 KG", priceAdjustment: 600 },
+            { label: "2 KG", priceAdjustment: 1800 },
+          ] 
+        }
+      ]),
       addons: JSON.stringify([]),
       allowCustomMessage: false,
       isVisible: true,
@@ -254,10 +264,20 @@ async function reseed() {
       name: "Coconut Halwa | کوکو نٹ حلوا",
       slug: "coconut-halwa",
       description: "Authentic and rich traditional Coconut Halwa.",
-      basePrice: "800.00",
+      basePrice: "400.00",
       categoryId: traditionalSweets.id,
       imageUrls: JSON.stringify(["/images/coconut_halwa_1778357656534.webp"]),
-      variants: JSON.stringify([]),
+      variants: JSON.stringify([
+        { 
+          name: "Weight", 
+          type: "weight", 
+          options: [
+            { label: "0.5 KG", priceAdjustment: 0 },
+            { label: "1 KG", priceAdjustment: 400 },
+            { label: "2 KG", priceAdjustment: 1200 },
+          ] 
+        }
+      ]),
       addons: JSON.stringify([]),
       allowCustomMessage: false,
       isVisible: true,
@@ -267,10 +287,20 @@ async function reseed() {
       name: "Badam Barfi | بادام برفی",
       slug: "badam-barfi",
       description: "Premium Badam Barfi (Almond Fudge) made with high-quality almonds.",
-      basePrice: "1200.00",
+      basePrice: "600.00",
       categoryId: traditionalSweets.id,
       imageUrls: JSON.stringify(["/images/badam_barfi_1778357675252.webp"]),
-      variants: JSON.stringify([]),
+      variants: JSON.stringify([
+        { 
+          name: "Weight", 
+          type: "weight", 
+          options: [
+            { label: "0.5 KG", priceAdjustment: 0 },
+            { label: "1 KG", priceAdjustment: 600 },
+            { label: "2 KG", priceAdjustment: 1800 },
+          ] 
+        }
+      ]),
       addons: JSON.stringify([]),
       allowCustomMessage: false,
       isVisible: true,
