@@ -6,3 +6,4 @@ export * from "./blackout-dates";
 export * from "./coupons";
 export * from "./settings";
 export * from "./users";
+export * from "./reviews";

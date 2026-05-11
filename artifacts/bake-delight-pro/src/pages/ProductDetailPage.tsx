@@ -5,12 +5,13 @@ import { StorefrontLayout } from "@/components/StorefrontLayout";
 import { useCartStore } from "@/stores/cart";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingBag, ArrowLeft, ArrowRight, Minus, Plus } from "lucide-react";
+import { ShoppingBag, ArrowLeft, ArrowRight, Minus, Plus, Star } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
 import { getUrduName, getUrduDesc, getUrduCategoryName } from "@/lib/i18n/productTranslations";
 import { motion } from "framer-motion";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Variant { name: string; type: string; options: Array<{ label: string; priceAdjustment: number }> }
 interface Addon { name: string; price: number }
@@ -28,6 +29,16 @@ export default function ProductDetailPage() {
   });
   const { data: related } = useGetRelatedProducts(id, {
     query: { queryKey: getGetRelatedProductsQueryKey(id), enabled: !!id },
+  });
+
+  const queryClient = useQueryClient();
+  const { data: reviews } = useQuery({
+    queryKey: ['reviews', id],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${id}/reviews`);
+      return res.json();
+    },
+    enabled: !!id
   });
 
   const [selectedImage, setSelectedImage] = useState(0);
@@ -336,6 +347,85 @@ export default function ProductDetailPage() {
             </div>
           </section>
         )}
+        {/* Reviews Section */}
+        <section className="mt-24">
+          <h2 className="text-2xl font-serif font-bold uppercase tracking-wide mb-10 pl-2">{isUrdu ? "کسٹمر ریویوز" : "Customer Reviews"}</h2>
+          
+          {/* Review Form */}
+          <div className="neu-flat rounded-[2rem] p-6 mb-8">
+            <h3 className="font-bold mb-4">{isUrdu ? "اپنا ریویو لکھیں" : "Write Your Review"}</h3>
+            <div className="grid gap-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">{isUrdu ? "نام" : "Name"}</label>
+                <input type="text" id="reviewer-name" className="w-full h-12 neu-pressed rounded-full px-6 text-sm focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">{isUrdu ? "ریٹنگ" : "Rating"}</label>
+                <select id="reviewer-rating" className="w-full h-12 neu-pressed rounded-full px-6 text-sm focus:outline-none">
+                  <option value="5">5 ⭐⭐⭐⭐⭐</option>
+                  <option value="4">4 ⭐⭐⭐⭐</option>
+                  <option value="3">3 ⭐⭐⭐</option>
+                  <option value="2">2 ⭐⭐</option>
+                  <option value="1">1 ⭐</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">{isUrdu ? "آپ کی رائے" : "Your Comment"}</label>
+                <textarea id="reviewer-comment" className="w-full h-24 neu-pressed rounded-[1.5rem] p-6 text-sm focus:outline-none" />
+              </div>
+              <button 
+                className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all"
+                onClick={async () => {
+                  const name = (document.getElementById('reviewer-name') as HTMLInputElement).value;
+                  const rating = Number((document.getElementById('reviewer-rating') as HTMLSelectElement).value);
+                  const comment = (document.getElementById('reviewer-comment') as HTMLTextAreaElement).value;
+                  
+                  if (!name || !comment) {
+                    toast({ title: isUrdu ? "نام اور تبصرہ لازمی ہے" : "Name and comment are required", variant: "destructive" });
+                    return;
+                  }
+                  
+                  try {
+                    const res = await fetch(`/api/products/${id}/reviews`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ customerName: name, rating, comment })
+                    });
+                    if (res.ok) {
+                      toast({ title: isUrdu ? "ریویو جمع ہو گیا!" : "Review submitted successfully!" });
+                      // Reset form
+                      (document.getElementById('reviewer-name') as HTMLInputElement).value = '';
+                      (document.getElementById('reviewer-comment') as HTMLTextAreaElement).value = '';
+                      // Refetch reviews
+                      queryClient.invalidateQueries({ queryKey: ['reviews', id] });
+                    }
+                  } catch (e) {
+                    console.error("Failed to submit review:", e);
+                  }
+                }}
+              >
+                {isUrdu ? "ریویو جمع کریں" : "Submit Review"}
+              </button>
+            </div>
+          </div>
+
+          {/* Reviews List */}
+          <div className="space-y-6">
+            {reviews?.map((r: any) => (
+              <div key={r.id} className="neu-flat rounded-[1.5rem] p-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-sm">{r.customerName}</span>
+                  <span className="text-primary text-sm">{"⭐".repeat(r.rating)}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{r.comment}</p>
+                <span className="text-[10px] text-muted-foreground block mt-2">{new Date(r.createdAt).toLocaleDateString()}</span>
+              </div>
+            ))}
+            {reviews?.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center">{isUrdu ? "ابھی تک کوئی ریویو نہیں ہے" : "No reviews yet"}</p>
+            )}
+          </div>
+        </section>
       </div>
     </StorefrontLayout>
   );
