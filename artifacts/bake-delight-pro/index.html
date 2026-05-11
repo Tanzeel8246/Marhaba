@@ -9,6 +9,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
+      // Force clear local storage and session storage once to fix corrupt state
+      const cleared = localStorage.getItem('app_force_cleared_v2');
+      if (!cleared) {
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('app_force_cleared_v2', 'true');
+        window.location.reload();
+      }
+
       // Force unregister all service workers immediately to fix stale cache
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
