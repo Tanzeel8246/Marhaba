@@ -22,6 +22,16 @@ html.lang-ur button {
   line-height: 1.9;
 }
 
+/* Increase line height for headings in Urdu to prevent overlapping */
+html.lang-ur h1,
+html.lang-ur h2,
+html.lang-ur h3,
+html.lang-ur h4,
+html.lang-ur h5,
+html.lang-ur h6 {
+  line-height: 2 !important;
+}
+
 /* Keep Inter for English / admin */
 html:not(.lang-ur) body {
   font-family: 'Inter', sans-serif;

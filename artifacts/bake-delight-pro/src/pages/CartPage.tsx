@@ -57,6 +57,11 @@ export default function CartPage() {
     });
   }, []);
   const [step, setStep] = useState<0 | 1 | 2>(0);
+  
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step]);
+
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
