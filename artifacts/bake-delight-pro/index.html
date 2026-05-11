@@ -9,8 +9,22 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
+      // Force unregister all service workers immediately to fix stale cache
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
+
+      // Handle chunk loading errors but prevent infinite reload loops
       window.addEventListener('vite:preloadError', (event) => {
-        window.location.reload();
+        const hasReloaded = sessionStorage.getItem('sw_reloaded');
+        if (!hasReloaded) {
+          sessionStorage.setItem('sw_reloaded', 'true');
+          window.location.reload();
+        }
       });
     </script>
   </head>
