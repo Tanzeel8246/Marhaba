@@ -292,17 +292,17 @@ export default function HomePage() {
               @MarhabaBakers
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:h-[600px]">
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="col-span-2 md:row-span-2 aspect-video md:aspect-auto neu-pressed rounded-[2.5rem] overflow-hidden p-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-[400px] md:h-[600px]">
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="col-span-2 row-span-2 neu-pressed rounded-[2.5rem] overflow-hidden p-2">
               <NextGenImage src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&q=80" className="w-full h-full object-cover rounded-[2rem]" alt="Bakery" />
             </motion.div>
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="neu-pressed rounded-[2rem] overflow-hidden p-2 aspect-square md:aspect-auto">
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="neu-pressed rounded-[2rem] overflow-hidden p-2">
               <NextGenImage src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80" className="w-full h-full object-cover rounded-[1.5rem]" alt="Breads" />
             </motion.div>
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="neu-pressed rounded-[2rem] overflow-hidden p-2 aspect-square md:aspect-auto">
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="neu-pressed rounded-[2rem] overflow-hidden p-2">
               <NextGenImage src="https://images.unsplash.com/photo-1517433367423-c7e5b0f35086?w=400&q=80" className="w-full h-full object-cover rounded-[1.5rem]" alt="Cakes" />
             </motion.div>
-            <motion.div variants={itemVariants} className="col-span-2 aspect-video md:aspect-auto neu-flat p-4 rounded-[2rem]">
+            <motion.div variants={itemVariants} className="col-span-2 aspect-video xl:aspect-square neu-flat p-4 rounded-[2rem]">
               <NextGenImage src="https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80" className="w-full h-full rounded-[1.5rem]" alt="Sweets" />
             </motion.div>
           </div>
