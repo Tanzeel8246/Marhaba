@@ -348,11 +348,11 @@ export default function ProductDetailPage() {
           </section>
         )}
         {/* Reviews Section */}
-        <section className="mt-24">
-          <h2 className="text-2xl font-serif font-bold uppercase tracking-wide mb-10 pl-2">{isUrdu ? "کسٹمر ریویوز" : "Customer Reviews"}</h2>
+        <section className="mt-24 max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl font-serif font-bold uppercase tracking-wide mb-10 text-center">{isUrdu ? "کسٹمر ریویوز" : "Customer Reviews"}</h2>
           
           {/* Review Form */}
-          <div className="neu-flat rounded-[2rem] p-6 mb-8">
+          <div className="neu-flat rounded-[2rem] p-8 mb-12 max-w-2xl mx-auto">
             <h3 className="font-bold mb-4">{isUrdu ? "اپنا ریویو لکھیں" : "Write Your Review"}</h3>
             <div className="grid gap-4">
               <div>
@@ -410,7 +410,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Reviews List */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-2xl mx-auto">
             {reviews?.map((r: any) => (
               <div key={r.id} className="neu-flat rounded-[1.5rem] p-6">
                 <div className="flex justify-between items-center mb-2">

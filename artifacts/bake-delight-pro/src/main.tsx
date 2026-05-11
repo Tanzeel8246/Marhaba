@@ -10,5 +10,5 @@ createRoot(document.getElementById("root")!).render(
   </LanguageProvider>
 );
 
-// Register service worker for offline admin support
-serviceWorkerRegistration.register();
+// Unregister service worker to fix mobile loading and stale cache issues
+serviceWorkerRegistration.unregister();
