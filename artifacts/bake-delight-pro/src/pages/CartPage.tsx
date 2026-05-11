@@ -360,7 +360,8 @@ export default function CartPage() {
                         }
                         const response = await fetch(imgUrl);
                         const blob = await response.blob();
-                        file = new File([blob], 'product.jpg', { type: 'image/jpeg' });
+                        const ext = blob.type.split('/')[1] || 'jpg';
+                        file = new File([blob], `product.${ext}`, { type: blob.type });
                       } catch (e) {
                         console.error("Failed to fetch product image for share:", e);
                       }
