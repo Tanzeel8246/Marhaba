@@ -1,143 +1,164 @@
 // ===================================================
-// اردو ترجمہ: تمام پروڈکٹس، ڈسکرپشنز اور کیٹیگریز
+// اردو ترجمہ: ڈیٹابیس کے تمام 24 پروڈکٹس — بالکل درست نام
 // ===================================================
 
 export const urduProductNames: Record<string, string> = {
-  // Celebration Cakes
-  "Rose & Pistachio Cake": "گلاب اور پستہ کیک",
-  "Pineapple Gateau": "انناس گاٹو",
-  "Tres Leches Cake": "ٹریس لیچیز کیک",
-  "Classic Vanilla Cake": "کلاسک ونیلا کیک",
-  "Classic Vanilla": "کلاسک ونیلا کیک",
-  "Red Velvet Dream Cake": "ریڈ ویلویٹ ڈریم کیک",
-  "Chocolate Fudge Indulgence Cake": "چاکلیٹ فج انڈلجنس کیک",
-  "Black Forest Cake": "بلیک فاریسٹ کیک",
-  "Mango Cream Cake": "آم کریم کیک",
-  "Strawberry Dream Cake": "اسٹرابیری ڈریم کیک",
-  "Lemon Drizzle Cake": "لیموں ڈریزل کیک",
-  "Caramel Mud Cake": "کیریمل مڈ کیک",
-  "Rainbow Celebration Cake": "رنگین سیلیبریشن کیک",
+  // ── Celebration Cakes (8) ──
+  "Classic Vanilla Birthday Cake":      "کلاسک ونیلا سالگرہ کیک",
+  "Chocolate Fudge Indulgence Cake":    "چاکلیٹ فج انڈلجنس کیک",
+  "Red Velvet Dream Cake":              "ریڈ ویلویٹ ڈریم کیک",
+  "Pineapple Gateau":                   "انناس گاٹو",
+  "Black Forest Cake":                  "بلیک فاریسٹ کیک",
+  "Tres Leches Cake":                   "ٹریس لیچیز کیک",
+  "Rose & Pistachio Cake":              "گلاب اور پستہ کیک",
+  "New York Cheesecake":                "نیو یارک چیز کیک",
 
-  // Cookies & Biscuits
-  "Almond Biscotti": "بادام بسکٹ",
-  "Coconut Macaroons": "ناریل مکارون",
-  "Chocolate Chip Cookies": "چاکلیٹ چپ کوکیز",
-  "Butter Shortbread": "مکھن شارٹ بریڈ",
-  "Oatmeal Raisin Cookies": "جئی اور کشمش کوکیز",
-  "Double Chocolate Cookies": "ڈبل چاکلیٹ کوکیز",
-  "Peanut Butter Cookies": "مونگ پھلی مکھن کوکیز",
-  "Sesame Seed Cookies": "تل کی کوکیز",
+  // ── Cookies & Biscuits (3) ──
+  "Classic Butter Cookies (12 pack)":   "کلاسک مکھن کوکیز (۱۲ عدد)",
+  "Macaron Box (12 pieces)":            "میکرون باکس (۱۲ عدد)",
+  "Brownie Box (9 pieces)":             "براؤنی باکس (۹ عدد)",
 
-  // Pastries & Desserts
-  "Cream Puff": "کریم پف",
-  "Chocolate Eclair": "چاکلیٹ ایکلیئر",
-  "Mango Mousse": "آم موس",
-  "Tiramisu": "تیرامیسو",
-  "Fruit Tart": "پھلوں کا ٹارٹ",
-  "Creme Brulee": "کریم بریولے",
-  "Apple Strudel": "سیب اسٹروڈل",
-  "Baklava": "بقلاوہ",
+  // ── Pastries & Desserts (3) ──
+  "Butter Croissant":                   "مکھن کراسٹ",
+  "Mini Cupcakes (6 pack)":             "منی کپ کیکس (۶ عدد)",
+  "Swiss Roll":                         "سوئس رول",
 
-  // Artisan Breads
-  "Sourdough Loaf": "ساورڈو لوف",
-  "Whole Wheat Bread": "سارے گیہوں کی روٹی",
-  "Garlic Herb Focaccia": "لہسن اور جڑی بوٹی فوکاسیا",
-  "Ciabatta": "چیابٹا",
-  "Multigrain Loaf": "ملٹی گرین لوف",
-  "Seeded Baguette": "بیج والی باگٹ روٹی",
-  "Rye Bread": "رائی کی روٹی",
-  "Dinner Rolls": "ڈنر رولز",
+  // ── Artisan Breads (1) ──
+  "Sourdough Boule":                    "ساورڈو بول",
 
-  // Traditional Sweets
-  "Badam Barfi": "بادام برفی",
-  "Gulab Jamun": "گلاب جامن",
-  "Kheer": "کھیر",
-  "Halwa": "حلوہ",
-  "Sooji Halwa": "سوجی حلوہ",
-  "Ras Malai": "رس ملائی",
-  "Ladoo": "لڈو",
-  "Jalebi": "جلیبی",
-  "Kalakand": "کلاکند",
-  "Khoya Barfi": "کھویا برفی",
+  // ── Traditional Sweets (5) ──
+  "Coconut Halwa | کوکو نٹ حلوا":       "ناریل حلوہ",
+  "Badam Barfi | بادام برفی":           "بادام برفی",
+  "Khajoor Halwa | کھجور حلوہ":         "کھجور حلوہ",
+  "Khoya Barfi | کھویا برفی":           "کھویا برفی",
+  "Milk Cake | ملک کیک":               "ملک کیک",
 
-  // Local Delights
-  "Samosa": "سموسہ",
-  "Khajur Roll": "کھجور رول",
-  "Chaat": "چاٹ",
-  "Aloo Tikki": "آلو ٹکی",
-  "Dahi Bhalla": "دہی بھلہ",
-  "Pani Puri": "پانی پوری",
+  // ── Local Delights (4) ──
+  "Cake Rus | کیک رس":                  "کیک رس",
+  "Special Khatai Biscuit | اسپیشل خطائی بسکٹ": "اسپیشل خطائی بسکٹ",
+  "Baqar Khani | باقر خانی":            "باقر خانی",
+  "Coconut Biscuit | کوکو نٹ بسکٹ":    "ناریل بسکٹ",
 };
 
 export const urduProductDescriptions: Record<string, string> = {
-  // Celebration Cakes
-  "A Pakistani bakery classic – light sponge layers filled with pineapple cream.": "ہلکی اسفنج تہوں میں انناس کریم بھرا کلاسک پاکستانی کیک۔",
-  "Velvety red sponge with luscious cream cheese frosting.": "مخملی سرخ اسفنج پر کریم چیز کا لاجواب لیپ۔",
-  "Rich dark chocolate sponge with velvety ganache – a chocoholic's dream.": "گہری چاکلیٹ اسفنج پر ملائم گاناشے — چاکلیٹ عاشقوں کا خواب۔",
-  "Soaked in three kinds of milk for ultimate softness.": "تین قسم کے دودھ میں بھگویا ہوا، بے حد نرم و لطیف کیک۔",
-  "Timeless vanilla sponge with fresh whipped cream.": "تازہ کریم کے ساتھ لازوال ونیلا اسفنج کیک۔",
-  "Rose-infused sponge with pistachios and cream.": "گلاب کی مہک، پستہ اور کریم کا دلکش امتزاج۔",
-  "Layers of chocolate sponge with rich fudge frosting.": "چاکلیٹ اسفنج تہوں پر کثیف فج فراسٹنگ۔",
-  "Dark chocolate sponge layered with cherry cream.": "ڈارک چاکلیٹ اسفنج اور چیری کریم کی تہیں۔",
-  "Fresh mango cream cake with real mango pulp.": "تازہ آم کی گودے والی ملائم کریم کیک۔",
-  "Bright lemon cake with tangy drizzle glaze.": "ترش لیموں کی خوشبو والا چمکدار کیک۔",
+  // ── Celebration Cakes ──
+  "A timeless vanilla sponge layered with silky buttercream frosting. Perfect for any celebration.":
+    "ریشمی مکھن کریم کی تہوں میں لپٹا لازوال ونیلا اسفنج — ہر جشن کے لیے بہترین۔",
 
-  // Cookies & Biscuits
-  "Crunchy twice-baked cookies with almonds.": "دو مرتبہ پکے کرارے بادام بسکٹ۔",
-  "Soft and chewy coconut treats.": "ناریل کے نرم و لطیف مکارون۔",
-  "Classic cookies loaded with chocolate chips.": "چاکلیٹ چپس سے بھری کلاسک کوکیز۔",
-  "Melt-in-the-mouth buttery shortbread.": "منہ میں گھلنے والا مکھن شارٹ بریڈ۔",
-  "Hearty oatmeal cookies with plump raisins.": "جئی اور کشمش کی بھرپور کوکیز۔",
+  "Rich dark chocolate sponge with velvety ganache — a chocoholic's dream.":
+    "مخملی گاناشے کے ساتھ گہرے چاکلیٹ کا بھرپور اسفنج — چاکلیٹ عاشقوں کا خواب۔",
 
-  // Pastries & Desserts
-  "Light choux pastry filled with fresh cream.": "تازہ کریم سے بھرا ہلکا پف پیسٹری۔",
-  "Classic chocolate-glazed eclair with cream filling.": "کریم بھرا چاکلیٹ گلیزڈ ایکلیئر۔",
-  "Velvety fresh mango mousse dessert.": "تازہ آم کی ملائم و خوشبودار موس مٹھاس۔",
-  "Italian classic with mascarpone and espresso layers.": "ماسکاریپون اور کافی تہوں کا اطالوی کلاسک۔",
-  "Fresh fruit tart with pastry cream.": "تازہ پھلوں اور پیسٹری کریم کا ٹارٹ۔",
+  "Velvety red sponge with luscious cream cheese frosting.":
+    "مخملی سرخ اسفنج پر کریم چیز کا لاجواب میٹھا لیپ۔",
 
-  // Artisan Breads
-  "Slow-fermented artisan sourdough with crispy crust.": "آہستہ خمیر کی روایتی ساورڈو — کرارے چھلکے کے ساتھ۔",
-  "Wholesome whole wheat loaf baked fresh daily.": "روزانہ تازہ پکی سارے گیہوں کی خوراک بخش روٹی۔",
-  "Italian flatbread with garlic and fresh herbs.": "لہسن اور تازہ جڑی بوٹیوں والی اطالوی چپٹی روٹی۔",
-  "Rustic Italian ciabatta with open crumb.": "کھلے ریشوں والی کھردری اطالوی چیابٹا روٹی۔",
+  "A Pakistani bakery classic — light sponge layers filled with pineapple cream.":
+    "ہلکی اسفنج تہوں میں انناس کریم بھرا — پاکستانی بیکری کا لازوال کلاسک۔",
 
-  // Traditional Sweets
-  "Melt-in-the-mouth almond barfi with silver leaf.": "چاندی ورق والی منہ میں گھلنے والی بادام برفی۔",
-  "Soft milk-solid dumplings soaked in rose syrup.": "گلاب کی شربت میں ڈوبے ملائم گلاب جامن۔",
-  "Creamy rice pudding flavored with cardamom.": "الائچی کی مہک والی ملائم چاول کی کھیر۔",
-  "Traditional semolina halwa with dry fruits.": "خشک میوہ جات والا روایتی سوجی حلوہ۔",
-  "Delicate ras malai dumplings in saffron milk.": "زعفران دودھ میں ملائم رس ملائی۔",
+  "Layers of dark chocolate sponge, cherries, and whipped cream.":
+    "ڈارک چاکلیٹ اسفنج، چیری اور مکھن کریم کی پرتیں۔",
 
-  // Local Delights
-  "Crispy pastry filled with spiced potatoes.": "مصالحہ دار آلو بھرے کرارے سموسے۔",
-  "Sweet date rolls with mixed nuts.": "مخلوط میوہ جات والے میٹھے کھجور رول۔",
+  "Ultra-moist sponge soaked in three kinds of milk.":
+    "تین قسم کے دودھ میں بھگویا ہوا انتہائی نرم و رسیلا اسفنج۔",
+
+  "Fragrant rose-water infused sponge with pistachio buttercream.":
+    "گلاب کے عرق سے مہکتا اسفنج، پستے کی مکھن کریم کے ساتھ۔",
+
+  "Dense, creamy, and smooth baked to perfection.":
+    "گھنا، ملائم اور ہموار — کامل طریقے سے پکا ہوا۔",
+
+  // ── Cookies & Biscuits ──
+  "Buttery melt-in-your-mouth cookies.":
+    "منہ میں گھل جانے والے مکھنی بسکٹ۔",
+
+  "Delicate French macarons in seasonal flavours.":
+    "موسمی ذائقوں میں نازک فرانسیسی میکرون۔",
+
+  "Fudgy, rich chocolate brownies baked with Belgian chocolate.":
+    "بیلجیم چاکلیٹ سے پکے گاڑھے اور لذیذ چاکلیٹ براؤنیز۔",
+
+  // ── Pastries & Desserts ──
+  "Flaky, golden, made with pure European butter.":
+    "خالص یورپی مکھن سے بنا سنہرا اور کرارا کراسٹ۔",
+
+  "Perfectly portioned mini cupcakes with pillowy frosting swirls.":
+    "ملائم کریم کے گھونگھریالے پیچوں سے سجے چھوٹے کپ کیکس۔",
+
+  "Soft sponge rolled with fresh cream and jam.":
+    "تازہ کریم اور جام کے ساتھ لپٹا نرم اسفنج۔",
+
+  // ── Artisan Breads ──
+  "Long-fermented sourdough with a crisp crust.":
+    "دیر سے خمیر کی ہوئی ساورڈو روٹی — کرارے چھلکے کے ساتھ۔",
+
+  // ── Traditional Sweets ──
+  "Authentic and rich traditional Coconut Halwa.":
+    "اصلی اور لذیذ روایتی ناریل حلوہ۔",
+
+  "Premium Badam Barfi (Almond Fudge) made with high-quality almonds.":
+    "اعلیٰ معیار کے بادام سے بنی پریمیم بادام برفی۔",
+
+  "Healthy, energy-boosting Khajoor Halwa made from premium dates.":
+    "اعلیٰ کھجوروں سے بنا صحت بخش اور توانائی سے بھرپور کھجور حلوہ۔",
+
+  "Classic melt-in-the-mouth Khoya Barfi.":
+    "منہ میں گھل جانے والی کلاسک کھویا برفی۔",
+
+  "Traditional grainy milk cake, sweet and rich. | دانے دار ملک کیک، میٹھا اور لذیذ۔":
+    "دانے دار ملک کیک، میٹھا اور لذیذ۔",
+
+  // ── Local Delights ──
+  "Crispy, golden, and perfectly sweetened traditional Cake Rus.":
+    "کرارا، سنہرا اور بالکل درست میٹھا روایتی کیک رس۔",
+
+  "Authentic Special Nan Khatai biscuits.":
+    "اصلی اسپیشل خطائی بسکٹ۔",
+
+  "Flaky, layered, and crispy traditional Baqar Khani.":
+    "تہہ دار، کرارا اور روایتی باقر خانی۔",
+
+  "Crunchy tea-time biscuits loaded with toasted coconut flakes.":
+    "چائے کے ساتھ کھانے کے لیے بھنے ناریل سے بھرے کرارے بسکٹ۔",
 };
 
 export const urduCategoryNames: Record<string, string> = {
-  "Celebration Cakes": "سیلیبریشن کیکس",
-  "Cookies & Biscuits": "کوکیز اور بسکٹ",
+  "Celebration Cakes":   "سیلیبریشن کیکس",
+  "Cookies & Biscuits":  "کوکیز اور بسکٹ",
   "Pastries & Desserts": "پیسٹریز اور میٹھے",
-  "Artisan Breads": "آرٹیزن بریڈز",
-  "Traditional Sweets": "روایتی مٹھائیاں",
-  "Local Delights": "مقامی لذتیں",
-  "Treat": "تحفہ",
+  "Artisan Breads":      "آرٹیزن بریڈز",
+  "Traditional Sweets":  "روایتی مٹھائیاں",
+  "Local Delights":      "مقامی لذتیں",
+  "Treat":               "تحفہ",
 };
 
-/** Product نام کا اردو ترجمہ */
+/** Product نام کا اردو ترجمہ — ڈیٹابیس کے بالکل درست نام سے match */
 export function getUrduName(name: string | null | undefined): string {
   if (!name) return "";
-  return urduProductNames[name.trim()] ?? name;
+  const trimmed = name.trim();
+  // Exact match
+  if (urduProductNames[trimmed]) return urduProductNames[trimmed];
+  // Case-insensitive match
+  const lower = trimmed.toLowerCase();
+  const found = Object.entries(urduProductNames).find(
+    ([k]) => k.toLowerCase() === lower
+  );
+  return found ? found[1] : trimmed;
 }
 
 /** Product ڈسکرپشن کا اردو ترجمہ */
 export function getUrduDesc(desc: string | null | undefined): string {
   if (!desc) return "";
-  return urduProductDescriptions[desc.trim()] ?? desc;
+  const trimmed = desc.trim();
+  if (urduProductDescriptions[trimmed]) return urduProductDescriptions[trimmed];
+  // Case-insensitive
+  const lower = trimmed.toLowerCase();
+  const found = Object.entries(urduProductDescriptions).find(
+    ([k]) => k.toLowerCase() === lower
+  );
+  return found ? found[1] : trimmed;
 }
 
 /** Category نام کا اردو ترجمہ */
 export function getUrduCategoryName(name: string | null | undefined): string {
   if (!name) return "";
-  return urduCategoryNames[name.trim()] ?? name;
+  return urduCategoryNames[name.trim()] ?? name.trim();
 }
