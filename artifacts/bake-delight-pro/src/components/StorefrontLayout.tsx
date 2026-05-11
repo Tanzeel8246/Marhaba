@@ -39,7 +39,7 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
               <Logo size={24} />
             </div>
             <div className="flex flex-col">
-              <span className={`font-serif font-bold text-foreground text-lg leading-tight tracking-wide`}>
+              <span className={`font-serif font-bold text-foreground text-sm sm:text-lg leading-tight tracking-wide`}>
                 {isUrdu ? "مرحبا سویٹس اینڈ بیکرز" : "MARHABA BAKERS"}
               </span>
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Baking Passion</span>
@@ -79,8 +79,8 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            <Link href="/cart" className="neu-flat rounded-full px-5 py-2.5 flex items-center gap-3 transition-transform active:scale-95 group">
-              <span className="text-xs uppercase tracking-widest font-bold text-foreground group-hover:text-primary transition-colors">{t.nav.cart}</span>
+            <Link href="/cart" className="neu-flat rounded-full px-3 py-2 sm:px-5 sm:py-2.5 flex items-center gap-2 sm:gap-3 transition-transform active:scale-95 group">
+              <span className="hidden sm:inline text-xs uppercase tracking-widest font-bold text-foreground group-hover:text-primary transition-colors">{t.nav.cart}</span>
               <div className="relative">
                 <ShoppingCart className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
                 {cartCount > 0 && (
@@ -91,8 +91,8 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
 
-            <Link href={user ? "/account/orders" : "/auth"} className="neu-flat rounded-full px-5 py-2.5 flex items-center gap-3 transition-transform active:scale-95 group">
-              <span className="text-xs uppercase tracking-widest font-bold text-foreground group-hover:text-primary transition-colors">
+            <Link href={user ? "/account/orders" : "/auth"} className="neu-flat rounded-full px-3 py-2 sm:px-5 sm:py-2.5 flex items-center gap-2 sm:gap-3 transition-transform active:scale-95 group">
+              <span className="hidden sm:inline text-xs uppercase tracking-widest font-bold text-foreground group-hover:text-primary transition-colors">
                 {user ? (isUrdu ? "میرا اکاؤنٹ" : "Account") : (isUrdu ? "لاگ ان" : "Login")}
               </span>
               <User className="h-4 w-4 text-foreground group-hover:text-primary transition-colors" />
