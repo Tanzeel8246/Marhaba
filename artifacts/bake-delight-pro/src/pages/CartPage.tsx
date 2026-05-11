@@ -15,13 +15,7 @@ import { addDays, format, isBefore } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useRef } from "react";
-
-// Using a dynamic approach for html2canvas since local install failed
-declare global {
-  interface Window {
-    html2canvas: any;
-  }
-}
+import html2canvas from "html2canvas";
 
 type CheckoutForm = {
   customerName: string;
@@ -78,15 +72,7 @@ export default function CartPage() {
   const downloadReceipt = async () => {
     if (!receiptRef.current) return;
     try {
-      // Dynamically load html2canvas from CDN if not present
-      if (!window.html2canvas) {
-        const script = document.createElement("script");
-        script.src = "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js";
-        document.head.appendChild(script);
-        await new Promise((resolve) => (script.onload = resolve));
-      }
-
-      const canvas = await window.html2canvas(receiptRef.current, {
+      const canvas = await html2canvas(receiptRef.current, {
         backgroundColor: "#f4f4f5",
         scale: 2,
         useCORS: true, // Crucial for cross-origin product images
@@ -262,6 +248,53 @@ export default function CartPage() {
 
     const currentItems = [...items];
     const msg = generateWhatsappMessage(data, currentItems);
+    
+    // Try to use navigator.share on mobile to send image with caption
+    if (navigator.share && currentItems[0]?.productImageUrl) {
+      try {
+        let imgUrl = currentItems[0].productImageUrl;
+        if (imgUrl.startsWith('http://localhost:3000')) {
+          imgUrl = imgUrl.replace('http://localhost:3000', '');
+        }
+        const response = await fetch(imgUrl);
+        const blob = await response.blob();
+        const ext = blob.type.split('/')[1] || 'jpg';
+        const file = new File([blob], `product.${ext}`, { type: blob.type });
+        
+        await navigator.share({
+          files: [file],
+          title: 'New Order',
+          text: msg
+        });
+        
+        setPlacedOrderData(data);
+        setPlacedOrderItems(currentItems);
+        setOrderPlaced(true);
+        clearCart();
+        
+        createOrder.mutate({
+          data: {
+            ...data,
+            customerEmail: data.customerEmail || null,
+            deliveryTimeSlot: data.deliveryTimeSlot || null,
+            notes: data.notes || null,
+            couponCode: appliedCoupon?.code ?? null,
+            items: currentItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              selectedVariants: item.selectedVariants,
+              selectedAddons: item.selectedAddons,
+              customMessage: item.customMessage ?? null,
+            })),
+          },
+        });
+        return;
+      } catch (err) {
+        console.error("Share failed in handlePlaceOrder:", err);
+        // Fallback to wa.me link
+      }
+    }
+
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, "_blank");
 
