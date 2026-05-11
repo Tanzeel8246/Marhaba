@@ -249,51 +249,7 @@ export default function CartPage() {
     const currentItems = [...items];
     const msg = generateWhatsappMessage(data, currentItems);
     
-    // Try to use navigator.share on mobile to send image with caption
-    if (navigator.share && currentItems[0]?.productImageUrl) {
-      try {
-        let imgUrl = currentItems[0].productImageUrl;
-        if (imgUrl.startsWith('http://localhost:3000')) {
-          imgUrl = imgUrl.replace('http://localhost:3000', '');
-        }
-        const response = await fetch(imgUrl);
-        const blob = await response.blob();
-        const ext = blob.type.split('/')[1] || 'jpg';
-        const file = new File([blob], `product.${ext}`, { type: blob.type });
-        
-        await navigator.share({
-          files: [file],
-          title: 'New Order',
-          text: msg
-        });
-        
-        setPlacedOrderData(data);
-        setPlacedOrderItems(currentItems);
-        setOrderPlaced(true);
-        clearCart();
-        
-        createOrder.mutate({
-          data: {
-            ...data,
-            customerEmail: data.customerEmail || null,
-            deliveryTimeSlot: data.deliveryTimeSlot || null,
-            notes: data.notes || null,
-            couponCode: appliedCoupon?.code ?? null,
-            items: currentItems.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              selectedVariants: item.selectedVariants,
-              selectedAddons: item.selectedAddons,
-              customMessage: item.customMessage ?? null,
-            })),
-          },
-        });
-        return;
-      } catch (err) {
-        console.error("Share failed in handlePlaceOrder:", err);
-        // Fallback to wa.me link
-      }
-    }
+
 
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, "_blank");

@@ -9,7 +9,7 @@
       "destination": "https://marhaba-27w3.onrender.com/images/:path*"
     },
     {
-      "source": "/((?!api/|images/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
