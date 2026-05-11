@@ -354,7 +354,11 @@ export default function CartPage() {
                     
                     if (firstItem && firstItem.productImageUrl) {
                       try {
-                        const response = await fetch(firstItem.productImageUrl);
+                        let imgUrl = firstItem.productImageUrl;
+                        if (imgUrl.startsWith('http://localhost:3000')) {
+                          imgUrl = imgUrl.replace('http://localhost:3000', '');
+                        }
+                        const response = await fetch(imgUrl);
                         const blob = await response.blob();
                         file = new File([blob], 'product.jpg', { type: 'image/jpeg' });
                       } catch (e) {
