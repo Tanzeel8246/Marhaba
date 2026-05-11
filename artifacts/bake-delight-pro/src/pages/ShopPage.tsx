@@ -8,18 +8,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, X, ShoppingBag } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { getUrduName, getUrduDesc, getUrduCategoryName } from "@/lib/i18n/productTranslations";
 import { motion } from "framer-motion";
 
 function ProductCard({ product }: { product: { id: number; name: string; basePrice: string | number; imageUrls: unknown; description?: string | null; isAvailable: boolean; category?: { name: string } | null } }) {
   const images = (product.imageUrls as string[]) ?? [];
-  const { t } = useLanguage();
+  const { t, isUrdu } = useLanguage();
+
+  const displayName = isUrdu ? getUrduName(product.name) : product.name;
+  const displayDesc = product.description
+    ? (isUrdu ? getUrduDesc(product.description) : product.description)
+    : null;
+  const displayCat = product.category
+    ? (isUrdu ? getUrduCategoryName(product.category.name) : product.category.name)
+    : null;
+
   return (
     <motion.div whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
       <Link href={`/products/${product.id}`} className="block h-full">
         <div className="neu-flat rounded-[2rem] p-4 h-full flex flex-col group">
           <div className="aspect-square neu-pressed rounded-[1.5rem] p-2 overflow-hidden mb-4 relative">
             {images[0] ? (
-              <img src={images[0]} alt={product.name} className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-110" />
+              <img src={images[0]} alt={displayName} className="w-full h-full object-cover rounded-xl transition-transform duration-700 group-hover:scale-110" />
             ) : (
               <div className="w-full h-full bg-muted rounded-xl flex items-center justify-center">
                 <ShoppingBag className="h-8 w-8 text-muted-foreground/30" />
@@ -30,16 +40,16 @@ function ProductCard({ product }: { product: { id: number; name: string; basePri
                 <Badge variant="secondary" className="uppercase tracking-widest text-[10px] font-bold border-0 bg-white/90 text-black">{t.shop.soldOut}</Badge>
               </div>
             )}
-            {product.category && (
+            {displayCat && (
               <div className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm px-3 py-1 rounded-full text-[9px] uppercase tracking-widest font-bold text-foreground">
-                {product.category.name}
+                {displayCat}
               </div>
             )}
           </div>
-          
-          <h3 className="font-serif font-bold text-sm sm:text-base leading-tight mb-1 group-hover:text-primary transition-colors uppercase">{product.name}</h3>
-          {product.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{product.description}</p>}
-          
+
+          <h3 className="font-serif font-bold text-sm sm:text-base leading-tight mb-1 group-hover:text-primary transition-colors uppercase">{displayName}</h3>
+          {displayDesc && <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{displayDesc}</p>}
+
           <div className="mt-auto pt-2 flex flex-col gap-3">
             <p className="font-bold text-primary text-sm">{formatCurrency(Number(product.basePrice))} <span className="text-[10px] uppercase tracking-widest text-muted-foreground ml-1">{t.shop.from}</span></p>
             <button className="w-full neu-flat rounded-full py-2.5 text-[10px] font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all">
@@ -60,7 +70,7 @@ export default function ShopPage() {
     params.get("categoryId") ? Number(params.get("categoryId")) : undefined
   );
   const [debouncedSearch, setDebouncedSearch] = useState(search);
-  const { t } = useLanguage();
+  const { t, isUrdu } = useLanguage();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 350);
@@ -124,7 +134,7 @@ export default function ShopPage() {
                     }`}
                     onClick={() => setSelectedCategory(cat.id)}
                   >
-                    {cat.name}
+                    {isUrdu ? getUrduCategoryName(cat.name) : cat.name}
                   </button>
                 ))}
               </div>

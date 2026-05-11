@@ -5,10 +5,11 @@ import { StorefrontLayout } from "@/components/StorefrontLayout";
 import { useCartStore } from "@/stores/cart";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingBag, ArrowLeft, ArrowRight, Minus, Plus, Check } from "lucide-react";
+import { ShoppingBag, ArrowLeft, ArrowRight, Minus, Plus } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/currency";
 import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
+import { getUrduName, getUrduDesc, getUrduCategoryName } from "@/lib/i18n/productTranslations";
 import { motion } from "framer-motion";
 
 interface Variant { name: string; type: string; options: Array<{ label: string; priceAdjustment: number }> }
@@ -103,7 +104,7 @@ export default function ProductDetailPage() {
     }
     addItem({
       productId: product.id,
-      productName: getLocalizedText(product.name, isUrdu),
+      productName: isUrdu ? getUrduName(product.name) : product.name,
       productImageUrl: images[0] ?? null,
       quantity,
       unitPrice: price,
@@ -113,7 +114,7 @@ export default function ProductDetailPage() {
       subtotal: price * quantity,
       leadTimeHours: (product as any).leadTimeHours || 0,
     });
-    toast({ title: t.product.addedToCart(getLocalizedText(product.name, isUrdu), quantity) });
+    toast({ title: t.product.addedToCart(isUrdu ? getUrduName(product.name) : product.name, quantity) });
     navigate("/cart");
   };
 
@@ -169,16 +170,20 @@ export default function ProductDetailPage() {
             <div className="neu-flat rounded-[2.5rem] p-8 sm:p-10">
               {product.category && (
                 <span className="inline-block text-[10px] font-bold uppercase tracking-widest text-primary mb-4">
-                  {product.category.name}
+                  {isUrdu ? getUrduCategoryName(product.category.name) : product.category.name}
                 </span>
               )}
-              <h1 className="text-3xl sm:text-4xl font-serif font-bold uppercase tracking-wide leading-tight mb-4">{getLocalizedText(product.name, isUrdu)}</h1>
+              <h1 className="text-3xl sm:text-4xl font-serif font-bold uppercase tracking-wide leading-tight mb-4">
+                {isUrdu ? getUrduName(product.name) : product.name}
+              </h1>
               <div className="text-2xl font-bold text-foreground mb-6">
                 {formatCurrency(price)}
               </div>
               
               {product.description && (
-                <p className="text-muted-foreground text-sm leading-relaxed mb-8">{getLocalizedText(product.description, isUrdu)}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-8">
+                  {isUrdu ? getUrduDesc(product.description) : product.description}
+                </p>
               )}
 
               {!product.isAvailable && (
@@ -320,7 +325,9 @@ export default function ProductDetailPage() {
                           </div>
                         )}
                       </div>
-                      <h3 className="font-serif font-bold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2 uppercase">{p.name}</h3>
+                      <h3 className="font-serif font-bold text-sm leading-tight group-hover:text-primary transition-colors line-clamp-2 uppercase">
+                        {isUrdu ? getUrduName(p.name) : p.name}
+                      </h3>
                       <p className="font-bold text-primary text-sm mt-auto pt-3">{formatCurrency(Number(p.basePrice))}</p>
                     </div>
                   </Link>

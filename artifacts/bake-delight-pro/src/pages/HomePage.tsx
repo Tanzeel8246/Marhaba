@@ -1,30 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "wouter";
-import { useListBanners, useListPopularProducts, useListCategories } from "@workspace/api-client-react";
+import { useListBanners, useListPopularProducts, useListCategories, useListProducts } from "@workspace/api-client-react";
 import { StorefrontLayout } from "@/components/StorefrontLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, ArrowLeft, ShoppingBag, Truck, Heart, Star, Camera, Mail, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, ArrowLeft, ShoppingBag, Heart, Star, Camera, Mail, ShieldCheck, Zap } from "lucide-react";
 import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
+import { getUrduName, getUrduCategoryName } from "@/lib/i18n/productTranslations";
 import { motion } from "framer-motion";
 import { formatCurrency } from "@/lib/currency";
 import { NextGenImage } from "@/components/NextGenImage";
 
-const CATEGORY_IMAGES: Record<string, string> = {
-  "Celebration Cakes": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80",
-  "Cookies & Biscuits": "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400&q=80",
-  "Pastries & Desserts": "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&q=80",
-  "Artisan Breads": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80",
-  "Traditional Sweets": "https://images.unsplash.com/photo-1505935428862-770b6f24f629?w=400&q=80",
-  "Local Delights": "https://images.unsplash.com/photo-1530648672449-81f6c723e2f1?w=400&q=80",
-};
+
 
 export default function HomePage() {
   const { data: popular, isLoading: loadingPopular } = useListPopularProducts();
   const { data: banners, isLoading: loadingBanners } = useListBanners();
   const { data: categories, isLoading: loadingCategories } = useListCategories();
+  const { data: allProducts } = useListProducts({ visible: true });
   const { t, isUrdu } = useLanguage();
+
+  // کیٹیگری کے لیے پہلی پروڈکٹ کی تصویر استعمال کریں
+  const categoryProductImages = useMemo(() => {
+    const map: Record<string, string> = {};
+    allProducts?.forEach((p) => {
+      const imgs = (p.imageUrls as string[]) ?? [];
+      if (p.category?.name && imgs[0] && !map[p.category.name.trim()]) {
+        map[p.category.name.trim()] = imgs[0];
+      }
+    });
+    return map;
+  }, [allProducts]);
 
   const activeBanners = Array.isArray(banners) ? banners.filter((b) => b.isActive) : [];
   const heroImage = activeBanners.length > 0 ? activeBanners[0].imageUrl : "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&q=80";
@@ -122,13 +129,15 @@ export default function HomePage() {
                       <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors" />
                       <div className="w-full h-full rounded-full overflow-hidden bg-muted relative z-10">
                         <NextGenImage 
-                          src={CATEGORY_IMAGES[cat.name.trim()] || cat.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${cat.name}&backgroundColor=1a5e20&textColor=ffffff`} 
+                          src={categoryProductImages[cat.name.trim()] || cat.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${cat.name}&backgroundColor=1a5e20&textColor=ffffff`} 
                           alt={cat.name} 
                           className="w-full h-full group-hover:scale-110 transition-transform duration-500" 
                         />
                       </div>
                     </div>
-                    <h3 className="font-serif font-bold text-sm uppercase tracking-wide group-hover:text-primary transition-colors">{getLocalizedText(cat.name, isUrdu)}</h3>
+                    <h3 className="font-serif font-bold text-sm uppercase tracking-wide group-hover:text-primary transition-colors">
+                       {isUrdu ? getUrduCategoryName(cat.name) : cat.name}
+                     </h3>
                   </motion.div>
                 </Link>
               ))
@@ -139,7 +148,7 @@ export default function HomePage() {
         {/* 3. BESTSELLERS (PRODUCT GRID) */}
         <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
           <div className="neu-flat rounded-[3rem] p-8 sm:p-12">
-            <div className={`flex flex-col sm:flex-row items-end justify-between mb-12 gap-4 ${isUrdu ? 'sm:flex-row-reverse text-right' : 'text-left'}`}>
+            <div className={`flex flex-col sm:flex-row items-end justify-between mb-12 gap-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
               <div>
                 <h2 className="text-4xl font-serif font-bold uppercase tracking-wide mb-2">{t.home.popularTitle}</h2>
                 <p className="text-muted-foreground text-sm uppercase tracking-widest">{t.home.popularSubtitle}</p>
@@ -188,9 +197,11 @@ export default function HomePage() {
                             </div>
                           </div>
                           <h3 className="font-serif font-bold text-lg leading-tight group-hover:text-primary transition-colors line-clamp-1 uppercase mb-1">
-                            {getLocalizedText(p.name, isUrdu)}
-                          </h3>
-                          <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">{p.category?.name || 'Treat'}</p>
+                             {isUrdu ? getUrduName(p.name) : p.name}
+                           </h3>
+                           <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">
+                             {isUrdu ? getUrduCategoryName(p.category?.name) : (p.category?.name || 'Treat')}
+                           </p>
                         </Link>
                         <Link href={`/products/${p.id}`} className="mt-auto">
                           <button className="w-full neu-flat rounded-full py-4 text-[10px] font-bold uppercase tracking-widest hover:text-primary active:neu-pressed transition-all">
@@ -238,7 +249,7 @@ export default function HomePage() {
         {/* 5. CUSTOMER REVIEWS (TESTIMONIALS) */}
         <section className="px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-serif font-bold uppercase tracking-wider mb-2">{getLocalizedText("Customer Stories | کسٹمرز کی کہانیاں", isUrdu)}</h2>
+            <h2 className="text-3xl font-serif font-bold uppercase tracking-wider mb-2">{getLocalizedText("Customer Reviews | ہمارے کسٹمرز کی رائے", isUrdu)}</h2>
             <div className="flex justify-center gap-1 text-primary">
               <Star className="w-5 h-5 fill-current" />
               <Star className="w-5 h-5 fill-current" />
@@ -280,7 +291,7 @@ export default function HomePage() {
 
         {/* 6. SPECIAL MOMENTS GALLERY */}
         <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-          <div className={`flex flex-col sm:flex-row items-center justify-between mb-8 gap-4 ${isUrdu ? 'sm:flex-row-reverse text-right' : 'text-left'}`}>
+          <div className={`flex flex-col sm:flex-row items-center justify-between mb-8 gap-4 ${isUrdu ? 'text-right' : 'text-left'}`}>
             <div className={isUrdu ? 'text-right' : 'text-left'}>
               <h2 className="text-2xl sm:text-4xl font-serif font-bold uppercase tracking-wide mb-2 flex items-center gap-3 justify-center sm:justify-start">
                 <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
