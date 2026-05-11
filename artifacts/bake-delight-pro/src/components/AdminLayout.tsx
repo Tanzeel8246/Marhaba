@@ -150,7 +150,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                         active
                           ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground"
                           : "text-slate-600 dark:text-slate-400 hover:bg-muted/60 hover:text-foreground"
-                      } ${item.upcoming ? "opacity-60 cursor-not-allowed" : ""}`}
+                      }`}
                     >
                       {active && (
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />

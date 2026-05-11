@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { categories, products, banners } from "../../lib/db/src/schema";
+import { categoriesTable as categories, productsTable as products, bannersTable as banners } from "../../lib/db/src/schema";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool);

@@ -17,7 +17,7 @@ export default function AdminKitchenScreenPage() {
   const kitchenOrders = useMemo(() => {
     if (!orders) return [];
     return orders
-      .filter((o) => o.status === "pending" || o.status === "processing")
+      .filter((o) => o.status === "pending" || o.status === "in_baking")
       .sort((a, b) => new Date(a.deliveryDate).getTime() - new Date(b.deliveryDate).getTime());
   }, [orders]);
 
@@ -80,13 +80,13 @@ export default function AdminKitchenScreenPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
             {kitchenOrders.map((order) => (
-              <Card key={order.id} className={`overflow-hidden border-2 transition-all ${order.status === 'processing' ? 'border-primary shadow-md' : 'border-border'}`}>
-                <CardHeader className={`p-4 border-b ${order.status === 'processing' ? 'bg-primary/5' : 'bg-muted/30'}`}>
+              <Card key={order.id} className={`overflow-hidden border-2 transition-all ${order.status === 'in_baking' ? 'border-primary shadow-md' : 'border-border'}`}>
+                <CardHeader className={`p-4 border-b ${order.status === 'in_baking' ? 'bg-primary/5' : 'bg-muted/30'}`}>
                   <div className="flex items-start justify-between mb-2">
                     <Badge variant="outline" className="font-mono text-xs font-bold border-foreground/20">
                       #{order.id.toString().padStart(4, "0")}
                     </Badge>
-                    <Badge variant={order.status === "processing" ? "default" : "secondary"} className="uppercase tracking-widest text-[9px] font-bold">
+                    <Badge variant={order.status === "in_baking" ? "default" : "secondary"} className="uppercase tracking-widest text-[9px] font-bold">
                       {order.status}
                     </Badge>
                   </div>
@@ -141,7 +141,7 @@ export default function AdminKitchenScreenPage() {
                   )}
                 </CardContent>
                 <CardFooter className="p-4 bg-muted/10 border-t">
-                  <Button className="w-full gap-2 text-xs font-bold uppercase tracking-widest" variant={order.status === "processing" ? "default" : "outline"}>
+                  <Button className="w-full gap-2 text-xs font-bold uppercase tracking-widest" variant={order.status === "in_baking" ? "default" : "outline"}>
                     <CheckCircle2 className="w-4 h-4" />
                     {order.status === "pending" ? getLocalizedText("Start Preparing | تیاری شروع کریں", isUrdu) : getLocalizedText("Mark as Ready | تیار قرار دیں", isUrdu)}
                   </Button>

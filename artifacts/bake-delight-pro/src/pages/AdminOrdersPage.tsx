@@ -74,7 +74,7 @@ export default function AdminOrdersPage() {
     e.preventDefault();
     const orderId = e.dataTransfer.getData("orderId");
     if (orderId) {
-      updateStatus.mutate({ id: parseInt(orderId), data: { status: newStatus } });
+      updateStatus.mutate({ id: parseInt(orderId), data: { status: newStatus as OrderStatus } });
     }
   };
 

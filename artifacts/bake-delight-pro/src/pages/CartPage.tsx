@@ -277,7 +277,6 @@ export default function CartPage() {
           selectedAddons: item.selectedAddons,
           customMessage: item.customMessage ?? null,
         })),
-        userId: currentUser?.id ?? null,
       },
     });
   };

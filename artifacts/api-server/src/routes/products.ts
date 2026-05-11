@@ -23,9 +23,9 @@ router.post("/products/upload", async (req, res) => {
     const filePath = path.join(uploadDir, name);
     fs.writeFileSync(filePath, buffer);
 
-    res.json({ url: `/images/${name}` });
+    return res.json({ url: `/images/${name}` });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 

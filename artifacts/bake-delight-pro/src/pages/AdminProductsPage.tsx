@@ -166,7 +166,7 @@ export default function AdminProductsPage() {
           <div className="text-center py-16 text-muted-foreground"><ShoppingBag className="h-12 w-12 mx-auto mb-3 opacity-30" /><p>No products yet. Add your first!</p></div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
-            {products.map((p) => {
+            {products.map((p: any) => {
               const images = (p.imageUrls as string[]) ?? [];
               return (
                 <Card key={p.id}>

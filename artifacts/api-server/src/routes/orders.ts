@@ -287,10 +287,13 @@ router.post("/orders", async (req, res) => {
 
   const totalAmount = subtotal - discountAmount;
 
+  const userId = req.cookies?.["bake_user_session"];
+
   const [order] = await db
     .insert(ordersTable)
     .values({
       ...orderData,
+      userId: userId ? Number(userId) : null,
       couponCode: appliedCouponCode,
       items: orderItems,
       subtotal: subtotal.toFixed(2),

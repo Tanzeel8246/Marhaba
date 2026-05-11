@@ -45,9 +45,9 @@ router.post("/auth/register", async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ id: user.id, name: user.name, phone: user.phone });
+    return res.json({ id: user.id, name: user.name, phone: user.phone });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
@@ -72,9 +72,9 @@ router.post("/auth/login", async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ id: user.id, name: user.name, phone: user.phone });
+    return res.json({ id: user.id, name: user.name, phone: user.phone });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
@@ -91,9 +91,9 @@ router.get("/auth/me", async (req, res) => {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, Number(userId)));
     if (!user) return res.json({ authenticated: false });
 
-    res.json({ authenticated: true, user: { id: user.id, name: user.name, phone: user.phone } });
+    return res.json({ authenticated: true, user: { id: user.id, name: user.name, phone: user.phone } });
   } catch {
-    res.json({ authenticated: false });
+    return res.json({ authenticated: false });
   }
 });
 
@@ -103,9 +103,9 @@ router.get("/auth/orders", async (req, res) => {
 
   try {
     const userOrders = await db.select().from(ordersTable).where(eq(ordersTable.userId, Number(userId)));
-    res.json(userOrders);
+    return res.json(userOrders);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
