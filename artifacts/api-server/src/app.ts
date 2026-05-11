@@ -39,7 +39,7 @@ app.use("/api", router);
 if (process.env.NODE_ENV === "production") {
   // Assuming the frontend build output is in artifacts/bake-delight-pro/dist
   // and the server runs from artifacts/api-server
-  const frontendPath = path.join(__dirname, "..", "..", "bake-delight-pro", "dist");
+  const frontendPath = path.join(__dirname, "..", "..", "bake-delight-pro", "dist", "public");
   app.use(express.static(frontendPath));
 
   app.get(/.*/, (req, res) => {
