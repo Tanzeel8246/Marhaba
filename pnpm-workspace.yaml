@@ -7,6 +7,7 @@ packages:
 allowBuilds:
   core-js: true
   esbuild: true
+  sharp: set this to true or false
 
 autoInstallPeers: false
 
