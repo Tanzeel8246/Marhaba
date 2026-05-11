@@ -194,7 +194,12 @@ export default function CartPage() {
   const wa = t.cart.wa;
 
   const generateWhatsappMessage = (data: CheckoutForm, cartItems: typeof items) => {
+    const firstItem = cartItems[0];
+    const firstProductUrl = firstItem ? `${siteOrigin}/api/share/product/${firstItem.productId}` : null;
+
     const lines = [
+      firstProductUrl ? `${firstProductUrl}` : null,
+      "",
       wa.header,
       "",
       `*${wa.customer}:* ${data.customerName}`,
@@ -273,34 +278,9 @@ export default function CartPage() {
       },
     });
 
-    // Smart sharing: Use file share on mobile (if supported), fallback to link on desktop
-    const canShare = navigator.canShare && navigator.canShare({ files: [new File([], 'a.jpg', { type: 'image/jpeg' })] });
-    
-    if (canShare && currentItems[0]?.productImageUrl) {
-      try {
-        let imgUrl = currentItems[0].productImageUrl;
-        if (imgUrl.startsWith('http://localhost:3000')) {
-          imgUrl = imgUrl.replace('http://localhost:3000', '');
-        }
-        const response = await fetch(imgUrl);
-        const blob = await response.blob();
-        const ext = blob.type.split('/')[1] || 'jpg';
-        const file = new File([blob], `product.${ext}`, { type: blob.type });
-        
-        await navigator.share({
-          files: [file],
-          title: 'New Order',
-          text: msg
-        });
-        return;
-      } catch (err) {
-        console.error("Share failed in handlePlaceOrder:", err);
-      }
-    }
-
-    // Fallback for desktop or non-supported browsers
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, "_blank");
+
   };
 
   const BackArrow = isUrdu ? ArrowRight : ArrowLeft;
