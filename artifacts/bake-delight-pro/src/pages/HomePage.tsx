@@ -280,19 +280,39 @@ export default function HomePage() {
 
         {/* 6. SPECIAL MOMENTS GALLERY */}
         <section className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-          <div className={`flex flex-col sm:flex-row items-center justify-between mb-12 gap-4 ${isUrdu ? 'sm:flex-row-reverse text-right' : 'text-left'}`}>
+          <div className={`flex flex-col sm:flex-row items-center justify-between mb-8 gap-4 ${isUrdu ? 'sm:flex-row-reverse text-right' : 'text-left'}`}>
             <div className={isUrdu ? 'text-right' : 'text-left'}>
-              <h2 className="text-4xl font-serif font-bold uppercase tracking-wide mb-2 flex items-center gap-4 justify-center sm:justify-start">
-                <Camera className="w-8 h-8 text-primary" />
+              <h2 className="text-2xl sm:text-4xl font-serif font-bold uppercase tracking-wide mb-2 flex items-center gap-3 justify-center sm:justify-start">
+                <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                 {getLocalizedText("Special Moments | خاص لمحات", isUrdu)}
               </h2>
-              <p className="text-muted-foreground text-sm uppercase tracking-widest">{getLocalizedText("Captured with love by our community | ہماری کمیونٹی کی جانب سے محبت سے لی گئی تصاویر", isUrdu)}</p>
+              <p className="text-muted-foreground text-xs sm:text-sm uppercase tracking-widest">{getLocalizedText("Captured with love by our community | ہماری کمیونٹی کی جانب سے محبت سے لی گئی تصاویر", isUrdu)}</p>
             </div>
-            <button className="neu-flat rounded-full px-8 py-3 text-[10px] font-bold uppercase tracking-widest hover:text-primary transition-all">
+            <button className="neu-flat rounded-full px-6 py-2.5 text-[10px] font-bold uppercase tracking-widest hover:text-primary transition-all">
               @MarhabaBakers
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 h-[400px] md:h-[600px]">
+
+          {/* Mobile: simple stacked cards */}
+          <div className="flex flex-col gap-4 md:hidden">
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="neu-pressed rounded-[2rem] overflow-hidden p-2 h-[220px]">
+              <NextGenImage src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&q=80" className="w-full h-full object-cover rounded-[1.5rem]" alt="Bakery" />
+            </motion.div>
+            <div className="grid grid-cols-2 gap-4">
+              <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="neu-pressed rounded-[2rem] overflow-hidden p-2 h-[140px]">
+                <NextGenImage src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80" className="w-full h-full object-cover rounded-[1.5rem]" alt="Breads" />
+              </motion.div>
+              <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="neu-pressed rounded-[2rem] overflow-hidden p-2 h-[140px]">
+                <NextGenImage src="https://images.unsplash.com/photo-1517433367423-c7e5b0f35086?w=400&q=80" className="w-full h-full object-cover rounded-[1.5rem]" alt="Cakes" />
+              </motion.div>
+            </div>
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="neu-flat p-3 rounded-[2rem] h-[180px]">
+              <NextGenImage src="https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80" className="w-full h-full object-cover rounded-[1.5rem]" alt="Sweets" />
+            </motion.div>
+          </div>
+
+          {/* Desktop: original masonry grid */}
+          <div className="hidden md:grid md:grid-cols-4 gap-4 h-[600px]">
             <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="col-span-2 row-span-2 neu-pressed rounded-[2.5rem] overflow-hidden p-2">
               <NextGenImage src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&q=80" className="w-full h-full object-cover rounded-[2rem]" alt="Bakery" />
             </motion.div>
@@ -302,7 +322,7 @@ export default function HomePage() {
             <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} className="neu-pressed rounded-[2rem] overflow-hidden p-2">
               <NextGenImage src="https://images.unsplash.com/photo-1517433367423-c7e5b0f35086?w=400&q=80" className="w-full h-full object-cover rounded-[1.5rem]" alt="Cakes" />
             </motion.div>
-            <motion.div variants={itemVariants} className="col-span-2 aspect-video xl:aspect-square neu-flat p-4 rounded-[2rem]">
+            <motion.div variants={itemVariants} className="col-span-2 neu-flat p-4 rounded-[2rem]">
               <NextGenImage src="https://images.unsplash.com/photo-1488477181946-6428a0291777?w=800&q=80" className="w-full h-full rounded-[1.5rem]" alt="Sweets" />
             </motion.div>
           </div>
