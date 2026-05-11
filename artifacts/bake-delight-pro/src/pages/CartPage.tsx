@@ -251,9 +251,6 @@ export default function CartPage() {
     
 
 
-    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, "_blank");
-
     setPlacedOrderData(data);
     setPlacedOrderItems(currentItems);
     setOrderPlaced(true);
@@ -275,6 +272,35 @@ export default function CartPage() {
         })),
       },
     });
+
+    // Smart sharing: Use file share on mobile (if supported), fallback to link on desktop
+    const canShare = navigator.canShare && navigator.canShare({ files: [new File([], 'a.jpg', { type: 'image/jpeg' })] });
+    
+    if (canShare && currentItems[0]?.productImageUrl) {
+      try {
+        let imgUrl = currentItems[0].productImageUrl;
+        if (imgUrl.startsWith('http://localhost:3000')) {
+          imgUrl = imgUrl.replace('http://localhost:3000', '');
+        }
+        const response = await fetch(imgUrl);
+        const blob = await response.blob();
+        const ext = blob.type.split('/')[1] || 'jpg';
+        const file = new File([blob], `product.${ext}`, { type: blob.type });
+        
+        await navigator.share({
+          files: [file],
+          title: 'New Order',
+          text: msg
+        });
+        return;
+      } catch (err) {
+        console.error("Share failed in handlePlaceOrder:", err);
+      }
+    }
+
+    // Fallback for desktop or non-supported browsers
+    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank");
   };
 
   const BackArrow = isUrdu ? ArrowRight : ArrowLeft;
@@ -337,41 +363,35 @@ export default function CartPage() {
               <button 
                 onClick={async () => {
                   if (!placedOrderData) return;
-                  try {
-                    const firstItem = placedOrderItems[0];
-                    let file: File | null = null;
-                    
-                    if (firstItem && firstItem.productImageUrl) {
-                      try {
-                        let imgUrl = firstItem.productImageUrl;
-                        if (imgUrl.startsWith('http://localhost:3000')) {
-                          imgUrl = imgUrl.replace('http://localhost:3000', '');
-                        }
-                        const response = await fetch(imgUrl);
-                        const blob = await response.blob();
-                        const ext = blob.type.split('/')[1] || 'jpg';
-                        file = new File([blob], `product.${ext}`, { type: blob.type });
-                      } catch (e) {
-                        console.error("Failed to fetch product image for share:", e);
+                  
+                  const msg = generateWhatsappMessage(placedOrderData, placedOrderItems);
+                  const canShare = navigator.canShare && navigator.canShare({ files: [new File([], 'a.jpg', { type: 'image/jpeg' })] });
+                  
+                  if (canShare && placedOrderItems[0]?.productImageUrl) {
+                    try {
+                      let imgUrl = placedOrderItems[0].productImageUrl;
+                      if (imgUrl.startsWith('http://localhost:3000')) {
+                        imgUrl = imgUrl.replace('http://localhost:3000', '');
                       }
+                      const response = await fetch(imgUrl);
+                      const blob = await response.blob();
+                      const ext = blob.type.split('/')[1] || 'jpg';
+                      const file = new File([blob], `product.${ext}`, { type: blob.type });
+                      
+                      await navigator.share({
+                        files: [file],
+                        title: 'Order Details',
+                        text: msg
+                      });
+                      return;
+                    } catch (err) {
+                      console.error("Share failed in button:", err);
                     }
-                    
-                    const msg = generateWhatsappMessage(placedOrderData, placedOrderItems);
-                    
-                    const shareData: ShareData = {
-                      title: 'Order Details',
-                      text: msg
-                    };
-                    
-                    if (file) {
-                      shareData.files = [file];
-                    }
-                    
-                    await navigator.share(shareData);
-                  } catch (err) {
-                    console.error("Share error:", err);
-                    toast({ title: "❌ Share Failed", variant: "destructive" });
                   }
+                  
+                  // Fallback for desktop: Open wa.me link with text
+                  const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
+                  window.open(waUrl, "_blank");
                 }}
                 className="neu-flat px-8 py-4 rounded-full text-xs font-bold uppercase tracking-widest text-green-600 hover:bg-green-50 active:neu-pressed transition-all w-full flex items-center justify-center gap-2"
               >
