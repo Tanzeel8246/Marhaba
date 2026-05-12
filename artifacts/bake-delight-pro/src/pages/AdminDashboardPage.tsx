@@ -411,7 +411,7 @@ export default function AdminDashboardPage() {
               <CardContent className="p-6">
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Liquid Balance</p>
                 <div className="flex items-center justify-between">
-                  <p className="text-3xl font-bold">{formatCurrency(cashInHand + bankBalance - payables)}</p>
+                  <p className="text-3xl font-bold">{formatCurrency(currentBalance - payables)}</p>
                   <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
                     <Wallet className="w-6 h-6 text-white/80" />
                   </div>
