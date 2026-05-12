@@ -10,6 +10,7 @@ export const reviewsTable = pgTable("reviews", {
   customerName: text("customer_name").notNull(),
   rating: integer("rating").notNull(),
   comment: text("comment").notNull(),
+  status: text("status").notNull().default("pending"), // pending | approved | rejected
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

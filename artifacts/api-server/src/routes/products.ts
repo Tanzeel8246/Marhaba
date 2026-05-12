@@ -4,10 +4,11 @@ import { productsTable, categoriesTable, insertProductSchema } from "@workspace/
 import { eq, ilike, and, desc } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
-router.post("/products/upload", async (req, res) => {
+router.post("/products/upload", requireAdmin, async (req, res) => {
   try {
     const { base64, fileName } = req.body;
     if (!base64) return res.status(400).json({ error: "No image data" });
@@ -77,7 +78,7 @@ router.get("/products", async (req, res) => {
   res.json(products);
 });
 
-router.post("/products", async (req, res) => {
+router.post("/products", requireAdmin, async (req, res) => {
   const parsed = insertProductSchema.safeParse(req.body);
   if (!parsed.success) {
     const errorDetails = JSON.stringify(parsed.error.flatten().fieldErrors);
@@ -145,14 +146,13 @@ router.get("/products/:id", async (req, res) => {
   res.json(product);
 });
 
-router.put("/products/:id", async (req, res) => {
+router.put("/products/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
 
   try {
     const body = req.body;
 
     // Explicitly build the update payload with correct Drizzle camelCase keys
-    // and proper types — avoids passing unknown fields or wrong types to the DB
     const updateData: Record<string, unknown> = {};
 
     if (body.name !== undefined)               updateData.name = String(body.name);
@@ -165,7 +165,6 @@ router.put("/products/:id", async (req, res) => {
     if (body.isAvailable !== undefined)        updateData.isAvailable = Boolean(body.isAvailable);
     if (body.leadTimeHours !== undefined)      updateData.leadTimeHours = Number(body.leadTimeHours);
 
-    // imageUrls, variants, addons must be JSON arrays
     if (body.imageUrls !== undefined) {
       updateData.imageUrls = Array.isArray(body.imageUrls)
         ? body.imageUrls
@@ -197,13 +196,13 @@ router.put("/products/:id", async (req, res) => {
   }
 });
 
-router.delete("/products/:id", async (req, res) => {
+router.delete("/products/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(productsTable).where(eq(productsTable.id, id));
   res.status(204).send();
 });
 
-router.patch("/products/:id/toggle-visibility", async (req, res) => {
+router.patch("/products/:id/toggle-visibility", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const [current] = await db.select().from(productsTable).where(eq(productsTable.id, id));
   if (!current) {
@@ -218,7 +217,7 @@ router.patch("/products/:id/toggle-visibility", async (req, res) => {
   res.json(product);
 });
 
-router.patch("/products/:id/toggle-availability", async (req, res) => {
+router.patch("/products/:id/toggle-availability", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const [current] = await db.select().from(productsTable).where(eq(productsTable.id, id));
   if (!current) {

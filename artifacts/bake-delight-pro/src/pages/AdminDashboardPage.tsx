@@ -78,42 +78,57 @@ export default function AdminDashboardPage() {
 
   const lastUpdated = dataUpdatedAt ? format(new Date(dataUpdatedAt), "h:mm:ss a") : "--";
 
-  // Mocked advanced financial stats for premium competition dashboard UI
+  const [cashBalance, setCashBalance] = useState({ totalIn: 0, totalOut: 0, balance: 0 });
+  const [loadingCash, setLoadingCash] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/cash-book/balance", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => {
+        setCashBalance(data);
+        setLoadingCash(false);
+      })
+      .catch(() => setLoadingCash(false));
+  }, []);
+
   const totalRevenue = summary?.totalRevenue ?? 0;
-  const netProfit = totalRevenue * 0.45; // Simulated 45% margin
-  const cashInHand = totalRevenue * 0.15; // Simulated 15% in cash drawer
-  const bankBalance = totalRevenue * 0.85; // Simulated 85% in bank
-  const payables = 14500; // Mocked payables
+  const netProfit = totalRevenue - (cashBalance.totalOut); // Gross approximation: Revenue - Expenses
+  const currentBalance = cashBalance.balance;
+  const payables = 0; // Will be real once Suppliers/Purchases are fully logged
 
   const topCards = [
     { 
-      label: "Cash in Hand | نقدی رقم", 
-      value: formatCurrency(cashInHand), 
+      label: "Liquid Balance | دستیاب نقدی", 
+      value: formatCurrency(currentBalance), 
       icon: Wallet, 
-      sub: "PHYSICAL CASH BALANCE | نقد بیلنس", 
+      sub: "CASH + BANK BALANCE | کل نقد و بینک بیلنس", 
       color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
-      active: true
+      active: true,
+      loading: loadingCash
     },
     { 
-      label: "Bank Balance | بینک بیلنس", 
-      value: formatCurrency(bankBalance), 
-      icon: Landmark, 
-      sub: "TOTAL BANK FUNDS | کل بینک فنڈز", 
-      color: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400" 
+      label: "Total Expenses | کل اخراجات", 
+      value: formatCurrency(cashBalance.totalOut), 
+      icon: Receipt, 
+      sub: "TOTAL OUTFLOW | کل اخراجات کا ریکارڈ", 
+      color: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
+      loading: loadingCash
     },
     { 
       label: "Total Revenue | کل آمدنی", 
       value: formatCurrency(totalRevenue), 
       icon: TrendingUp, 
       sub: `${summary?.totalOrders ?? 0} COMPLETED ORDERS | مکمل شدہ آرڈرز`, 
-      color: "bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400" 
+      color: "bg-purple-50 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400",
+      loading: isLoading
     },
     { 
-      label: "Net Profit | خالص منافع", 
+      label: "Estimated Profit | تخمینی منافع", 
       value: formatCurrency(netProfit), 
       icon: Banknote, 
-      sub: "REVENUE MINUS COGS | آمدنی منہا اخراجات", 
-      color: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" 
+      sub: "REVENUE MINUS EXPENSES | آمدنی منہا اخراجات", 
+      color: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
+      loading: isLoading || loadingCash
     },
   ];
 
@@ -233,7 +248,7 @@ export default function AdminDashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">{getLocalizedText(s.label, isUrdu)}</p>
-                      {isLoading ? <Skeleton className="h-8 w-24 mb-1" /> : (
+                      {s.loading ? <Skeleton className="h-8 w-24 mb-1" /> : (
                         <p className={`text-2xl font-bold tracking-tight ${s.active ? 'text-emerald-900 dark:text-emerald-100' : 'text-slate-900 dark:text-white'}`}>{s.value}</p>
                       )}
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">{getLocalizedText(s.sub, isUrdu)}</p>

@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { storeSettingsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
-import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { requireAdmin } from "../middlewares/requireAdmin";
+import { auditLog } from "../middlewares/requireAdmin";
 
 const router = Router();
-
-const ADMIN_SESSION_COOKIE = "bake_admin_session";
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   whatsappNumber: "923001234567",
@@ -51,12 +50,7 @@ router.get("/settings/public", async (_req, res) => {
   }
 });
 
-router.get("/admin/settings", async (req, res) => {
-  const session = req.cookies?.[ADMIN_SESSION_COOKIE];
-  if (session !== "authenticated") {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+router.get("/admin/settings", requireAdmin, async (req, res) => {
   try {
     const rows = await db.select().from(storeSettingsTable);
     const stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));
@@ -66,20 +60,20 @@ router.get("/admin/settings", async (req, res) => {
   }
 });
 
-router.patch("/admin/settings", async (req, res) => {
-  const session = req.cookies?.[ADMIN_SESSION_COOKIE];
-  if (session !== "authenticated") {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+router.patch("/admin/settings", requireAdmin, async (req, res) => {
+  const ip = (req.ip ?? req.socket.remoteAddress ?? "unknown").replace(/^::ffff:/, "");
   try {
     const data = req.body;
+    const oldValues: Record<string, string> = {};
+    
     for (const [key, value] of Object.entries(data)) {
       if (typeof value === "string") {
+        oldValues[key] = await getSetting(key);
         await setSetting(key, value);
       }
     }
+
+    await auditLog("admin.settings.updated", "settings", null, oldValues, data, ip);
 
     const rows = await db.select().from(storeSettingsTable);
     const stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));

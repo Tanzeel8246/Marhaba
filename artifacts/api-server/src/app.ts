@@ -1,11 +1,18 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP if it interferes with certain frontend features, or configure it properly
+}));
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : true;
 
 app.use(
   pinoHttp({
@@ -21,12 +28,13 @@ app.use(
       res(res) {
         return {
           statusCode: res.statusCode,
+          responseTime: res.responseTime,
         };
       },
     },
   }),
 );
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));

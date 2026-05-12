@@ -3,15 +3,16 @@ import { db } from "@workspace/db";
 import { couponsTable, insertCouponSchema } from "@workspace/db";
 import { eq, and, gt, or, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
-router.get("/coupons", async (req, res) => {
+router.get("/coupons", requireAdmin, async (req, res) => {
   const coupons = await db.select().from(couponsTable);
   res.json(coupons);
 });
 
-router.post("/coupons", async (req, res) => {
+router.post("/coupons", requireAdmin, async (req, res) => {
   const parsed = insertCouponSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -78,7 +79,7 @@ router.post("/coupons/validate", async (req, res) => {
   res.json({ valid: true, coupon, discountAmount: Number(discountAmount.toFixed(2)), message: "Coupon applied!" });
 });
 
-router.delete("/coupons/:id", async (req, res) => {
+router.delete("/coupons/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(couponsTable).where(eq(couponsTable.id, id));
   res.status(204).send();

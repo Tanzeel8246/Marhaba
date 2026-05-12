@@ -7,3 +7,5 @@ export * from "./coupons";
 export * from "./settings";
 export * from "./users";
 export * from "./reviews";
+export * from "./operations";
+export * from "./customers";

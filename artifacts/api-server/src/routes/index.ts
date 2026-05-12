@@ -11,6 +11,7 @@ import authRouter from "./auth";
 import settingsRouter from "./settings";
 import shareRouter from "./share";
 import reviewsRouter from "./reviews";
+import operationsRouter from "./operations";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(authRouter);
 router.use(settingsRouter);
 router.use(shareRouter);
 router.use(reviewsRouter);
+router.use(operationsRouter);
 
 export default router;

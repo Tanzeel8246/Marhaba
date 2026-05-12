@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { blackoutDatesTable, insertBlackoutDateSchema } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get("/blackout-dates", async (req, res) => {
   res.json(dates);
 });
 
-router.post("/blackout-dates", async (req, res) => {
+router.post("/blackout-dates", requireAdmin, async (req, res) => {
   const parsed = insertBlackoutDateSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -26,7 +27,7 @@ router.post("/blackout-dates", async (req, res) => {
   res.status(201).json(entry);
 });
 
-router.delete("/blackout-dates/:id", async (req, res) => {
+router.delete("/blackout-dates/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(blackoutDatesTable).where(eq(blackoutDatesTable.id, id));
   res.status(204).send();

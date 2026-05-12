@@ -4,45 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage, getLocalizedText } from "@/lib/i18n/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Table as TableIcon, Edit, Trash2, X } from "lucide-react";
+import { Plus, Search, Table as TableIcon, Edit, Trash2, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
-// Initial generic mock data for different modules
-const INITIAL_MOCK_DATA: Record<string, any[]> = {
-  "/admin/customers": [
-    { id: 1, name: "Ali Khan", phone: "0300-1234567", orders: 5, totalSpent: "Rs 4,500", status: "Active" },
-    { id: 2, name: "Sara Ahmed", phone: "0321-7654321", orders: 2, totalSpent: "Rs 1,200", status: "Active" },
-  ],
-  "/admin/suppliers": [
-    { id: 1, company: "Fresh Dairy Co.", contact: "Usman", phone: "0333-1112222", material: "Milk, Butter", balance: "Rs 15,000" },
-    { id: 2, company: "Premium Flour Mills", contact: "Zafar", phone: "0311-9998888", material: "Flour, Yeast", balance: "Rs 0" },
-  ],
-  "/admin/purchases": [
-    { id: "PO-1001", date: "2026-05-10", supplier: "Fresh Dairy Co.", amount: "Rs 5,000", status: "Received" },
-    { id: "PO-1002", date: "2026-05-11", supplier: "Premium Flour Mills", amount: "Rs 12,000", status: "Pending" },
-  ],
-  "/admin/expenses": [
-    { id: 1, date: "2026-05-09", category: "Utility", description: "Electricity Bill", amount: "Rs 25,000" },
-    { id: 2, date: "2026-05-10", category: "Maintenance", description: "Oven Repair", amount: "Rs 8,000" },
-  ],
-  "/admin/cash-book": [
-    { id: 1, date: "2026-05-10", type: "In", description: "Daily Counter Sales", amount: "Rs 45,000" },
-    { id: 2, date: "2026-05-10", type: "Out", description: "Paid to Supplier", amount: "Rs 15,000" },
-  ],
-  "/admin/reviews": [
-    { id: 1, customer: "Kamran", rating: "5 Stars", comment: "Amazing cake quality!", date: "2026-05-08", status: "Published" },
-    { id: 2, customer: "Ayesha", rating: "4 Stars", comment: "Good taste but delivery was late.", date: "2026-05-09", status: "Pending Review" },
-  ],
-  "/admin/reporting": [
-    { id: 1, report: "Monthly Sales Report", generated: "2026-05-01", size: "2.4 MB", type: "PDF" },
-    { id: 2, report: "Tax Summary Q1", generated: "2026-04-15", size: "1.1 MB", type: "CSV" },
-  ],
-  "/admin/special-moments": [
-    { id: 1, event: "Eid-ul-Fitr Prep", date: "2026-06-15", status: "Planning", budget: "Rs 100,000" },
-    { id: 2, event: "Bakery Anniversary", date: "2026-08-20", status: "Draft", budget: "Rs 50,000" },
-  ]
+const API_MAP: Record<string, string> = {
+  "/admin/customers": "/api/admin/customers",
+  "/admin/suppliers": "/api/admin/suppliers",
+  "/admin/purchases": "/api/admin/purchases",
+  "/admin/expenses": "/api/admin/expenses",
+  "/admin/cash-book": "/api/admin/cash-book",
+  "/admin/reviews": "/api/admin/reviews",
+  "/admin/loyalty": "/api/admin/loyalty",
+  "/admin/wastage": "/api/admin/wastage",
+  "/admin/special-moments": "/api/admin/special-moments",
 };
 
 const TITLES: Record<string, string> = {
@@ -53,6 +29,8 @@ const TITLES: Record<string, string> = {
   "/admin/reporting": "Reporting Hub | رپورٹس کا مرکز",
   "/admin/cash-book": "Cash Book | کیش بک",
   "/admin/reviews": "Customer Reviews | کسٹمرز کے ریویوز",
+  "/admin/loyalty": "Loyalty Program | لائلٹی پروگرام",
+  "/admin/wastage": "Wastage Management | ضیاع کا انتظام",
   "/admin/special-moments": "Special Moments | خاص لمحات",
 };
 
@@ -62,16 +40,41 @@ export default function AdminGenericModulePage() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [moduleData, setModuleData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = async () => {
+    const apiPath = API_MAP[location];
+    if (!apiPath) {
+      setModuleData([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(apiPath, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setModuleData(data);
+      } else {
+        toast({ title: "Error fetching data", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setModuleData(INITIAL_MOCK_DATA[location] || []);
+    fetchData();
   }, [location]);
 
   const title = TITLES[location] || "Module | ماڈیول";
-  const columns = moduleData.length > 0 ? Object.keys(moduleData[0]).filter(k => k !== "id") : [];
+  const columns = moduleData.length > 0 ? Object.keys(moduleData[0]).filter(k => !["id", "createdAt", "updatedAt", "supplierId", "productId"].includes(k)) : [];
 
   const handleOpenAdd = () => {
     setEditingItem(null);
@@ -84,28 +87,55 @@ export default function AdminGenericModulePage() {
   const handleOpenEdit = (item: any) => {
     setEditingItem(item);
     const initialForm: Record<string, string> = {};
-    columns.forEach(col => initialForm[col] = String(item[col]));
+    columns.forEach(col => initialForm[col] = String(item[col] ?? ""));
     setFormData(initialForm);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: any) => {
-    if (confirm(getLocalizedText("Are you sure you want to delete this record? | کیا آپ واقعی اس ریکارڈ کو حذف کرنا چاہتے ہیں؟", isUrdu))) {
-      setModuleData(prev => prev.filter(item => item.id !== id));
-      toast({ title: getLocalizedText("Deleted | حذف کر دیا گیا", isUrdu), description: getLocalizedText("Record removed successfully. | ریکارڈ کامیابی کے ساتھ ہٹا دیا گیا۔", isUrdu) });
+  const handleDelete = async (id: any) => {
+    if (!confirm(getLocalizedText("Are you sure? | کیا آپ واقعی حذف کرنا چاہتے ہیں؟", isUrdu))) return;
+    
+    const apiPath = `${API_MAP[location]}/${id}`;
+    try {
+      const res = await fetch(apiPath, { method: "DELETE", credentials: "include" });
+      if (res.ok) {
+        setModuleData(prev => prev.filter(item => item.id !== id));
+        toast({ title: "Deleted", description: "Record removed successfully." });
+      } else {
+        toast({ title: "Delete failed", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
     }
   };
 
-  const handleSave = () => {
-    if (editingItem) {
-      setModuleData(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...formData } : item));
-      toast({ title: getLocalizedText("Updated | اپڈیٹ کر دیا گیا", isUrdu), description: getLocalizedText("Record updated successfully. | ریکارڈ کامیابی کے ساتھ اپڈیٹ ہو گیا۔", isUrdu) });
-    } else {
-      const newItem = { id: Date.now(), ...formData };
-      setModuleData(prev => [newItem, ...prev]);
-      toast({ title: getLocalizedText("Added | شامل کر دیا گیا", isUrdu), description: getLocalizedText("New record added successfully. | نیا ریکارڈ کامیابی کے ساتھ شامل ہو گیا۔", isUrdu) });
+  const handleSave = async () => {
+    setSaving(true);
+    const apiPath = API_MAP[location];
+    const method = editingItem ? "PUT" : "POST";
+    const url = editingItem ? `${apiPath}/${editingItem.id}` : apiPath;
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+        credentials: "include"
+      });
+
+      if (res.ok) {
+        fetchData();
+        setIsDialogOpen(false);
+        toast({ title: "Success", description: "Record saved successfully." });
+      } else {
+        const err = await res.json();
+        toast({ title: "Save failed", description: err.error || "Unknown error", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-    setIsDialogOpen(false);
   };
 
   const filteredData = moduleData.filter(item => 
@@ -139,49 +169,56 @@ export default function AdminGenericModulePage() {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs uppercase bg-muted/40 text-muted-foreground font-semibold">
-                <tr>
-                  {columns.map((col) => (
-                    <th key={col} className="px-6 py-4">{col.replace(/([A-Z])/g, ' $1').trim()}</th>
-                  ))}
-                  <th className="px-6 py-4 text-right">{getLocalizedText("Actions | اعمال", isUrdu)}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
-                {filteredData.length === 0 ? (
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-sm text-muted-foreground">Loading real-time data...</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs uppercase bg-muted/40 text-muted-foreground font-semibold">
                   <tr>
-                    <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-muted-foreground">
-                      <TableIcon className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                      {getLocalizedText("No records found. | کوئی ریکارڈ نہیں ملا۔", isUrdu)}
-                    </td>
+                    {columns.map((col) => (
+                      <th key={col} className="px-6 py-4">{col.replace(/([A-Z])/g, ' $1').trim()}</th>
+                    ))}
+                    <th className="px-6 py-4 text-right">{getLocalizedText("Actions | اعمال", isUrdu)}</th>
                   </tr>
-                ) : (
-                  filteredData.map((row) => (
-                    <tr key={row.id} className="hover:bg-muted/30 transition-colors">
-                      {columns.map((col) => (
-                        <td key={col} className="px-6 py-4 font-medium">
-                          {row[col]}
-                        </td>
-                      ))}
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button onClick={() => handleOpenEdit(row)} variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button onClick={() => handleDelete(row.id)} variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {filteredData.length === 0 ? (
+                    <tr>
+                      <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-muted-foreground">
+                        <TableIcon className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                        {getLocalizedText("No records found. | کوئی ریکارڈ نہیں ملا۔", isUrdu)}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    filteredData.map((row) => (
+                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
+                        {columns.map((col) => (
+                          <td key={col} className="px-6 py-4 font-medium">
+                            {typeof row[col] === 'object' ? JSON.stringify(row[col]) : String(row[col] ?? "-")}
+                          </td>
+                        ))}
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button onClick={() => handleOpenEdit(row)} variant="ghost" size="icon" className="h-8 w-8 hover:text-primary">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button onClick={() => handleDelete(row.id)} variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="p-4 border-t border-border/50 bg-muted/20 text-xs text-muted-foreground text-center font-medium">
-            {getLocalizedText("Showing latest records. Fully operational module. | تازہ ترین ریکارڈ دکھائے جا رہے ہیں۔", isUrdu)}
+            {getLocalizedText("Real-time database connection active. | ڈیٹا بیس سے براہ راست منسلک۔", isUrdu)}
           </div>
         </Card>
       </div>
@@ -196,7 +233,7 @@ export default function AdminGenericModulePage() {
           <div className="space-y-4 py-4">
             {columns.map(col => (
               <div key={col} className="space-y-2">
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize">
+                <label className="text-sm font-medium leading-none capitalize">
                   {col.replace(/([A-Z])/g, ' $1').trim()}
                 </label>
                 <Input 
@@ -208,10 +245,11 @@ export default function AdminGenericModulePage() {
             ))}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={saving}>
               {getLocalizedText("Cancel | منسوخ کریں", isUrdu)}
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {getLocalizedText("Save | محفوظ کریں", isUrdu)}
             </Button>
           </DialogFooter>

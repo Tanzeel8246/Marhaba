@@ -1,37 +1,130 @@
 import { Router } from "express";
 import { z } from "zod";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { requireAdmin, ADMIN_SESSION_COOKIE } from "../middlewares/requireAdmin";
+import { auditLog } from "../middlewares/requireAdmin";
 
 const router = Router();
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const SESSION_SECRET = process.env.SESSION_SECRET ?? "change-me-in-production";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "admin123";
-const ADMIN_SESSION_COOKIE = "bake_admin_session";
 
+/** Generate a signed session token: base64data.hmac */
+function createSessionToken(): string {
+  const data = randomBytes(32).toString("hex");
+  const sig = createHmac("sha256", SESSION_SECRET).update(data).digest("hex");
+  return `${data}.${sig}`;
+}
+
+/** Verify a signed session token (constant-time comparison) */
+function verifySessionToken(token: string): boolean {
+  const dotIdx = token.lastIndexOf(".");
+  if (dotIdx === -1) return false;
+  const data = token.substring(0, dotIdx);
+  const sig  = token.substring(dotIdx + 1);
+  const expected = createHmac("sha256", SESSION_SECRET).update(data).digest("hex");
+  try {
+    return timingSafeEqual(Buffer.from(sig, "hex"), Buffer.from(expected, "hex"));
+  } catch {
+    return false;
+  }
+}
+
+// ─── Login Attempt Tracker (in-memory, production → Redis) ────────────────────
+const attempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(ip: string): { allowed: boolean; remainingMs: number } {
+  const now = Date.now();
+  let rec = attempts.get(ip);
+  if (!rec || now > rec.resetAt) {
+    rec = { count: 0, resetAt: now + WINDOW_MS };
+    attempts.set(ip, rec);
+  }
+  if (rec.count >= MAX_ATTEMPTS) {
+    return { allowed: false, remainingMs: rec.resetAt - now };
+  }
+  return { allowed: true, remainingMs: 0 };
+}
+
+function recordFailedAttempt(ip: string): void {
+  const now = Date.now();
+  let rec = attempts.get(ip);
+  if (!rec || now > rec.resetAt) {
+    rec = { count: 0, resetAt: now + WINDOW_MS };
+  }
+  rec.count += 1;
+  attempts.set(ip, rec);
+}
+
+function clearAttempts(ip: string): void {
+  attempts.delete(ip);
+}
+
+// ─── POST /admin/login ────────────────────────────────────────────────────────
 router.post("/admin/login", async (req, res) => {
+  const ip = (req.ip ?? req.socket.remoteAddress ?? "unknown").replace(/^::ffff:/, "");
+
+  // Rate limit check
+  const { allowed, remainingMs } = checkRateLimit(ip);
+  if (!allowed) {
+    const mins = Math.ceil(remainingMs / 60000);
+    res.status(429).json({
+      success: false,
+      message: `بہت زیادہ ناکام کوششیں۔ ${mins} منٹ بعد دوبارہ کوشش کریں۔`,
+    });
+    return;
+  }
+
   const parsed = z.object({ password: z.string() }).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ success: false, message: "Password required." });
     return;
   }
-  if (parsed.data.password !== ADMIN_PASSWORD) {
-    res.status(401).json({ success: false, message: "Incorrect password." });
+
+  // Constant-time password comparison
+  const inputBuf    = Buffer.from(parsed.data.password);
+  const expectedBuf = Buffer.from(ADMIN_PASSWORD);
+  const match =
+    inputBuf.length === expectedBuf.length &&
+    timingSafeEqual(inputBuf, expectedBuf);
+
+  if (!match) {
+    recordFailedAttempt(ip);
+    await auditLog("admin.login.failed", "auth", null, null, { ip }, ip);
+    res.status(401).json({ success: false, message: "غلط پاسورڈ۔" });
     return;
   }
-  res.cookie(ADMIN_SESSION_COOKIE, "authenticated", {
+
+  // Success — issue signed token
+  clearAttempts(ip);
+  const token = createSessionToken();
+
+  res.cookie(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 8 * 60 * 60 * 1000, // 8 گھنٹے (بزنس hours)
   });
-  res.json({ success: true, message: "Logged in successfully." });
+
+  await auditLog("admin.login.success", "auth", null, null, { ip }, ip);
+  res.json({ success: true, message: "کامیابی سے لاگن ہو گئے۔" });
 });
 
-router.post("/admin/logout", async (req, res) => {
+// ─── POST /admin/logout ───────────────────────────────────────────────────────
+router.post("/admin/logout", requireAdmin, async (req, res) => {
+  const ip = (req.ip ?? req.socket.remoteAddress ?? "unknown").replace(/^::ffff:/, "");
   res.clearCookie(ADMIN_SESSION_COOKIE);
-  res.json({ success: true, message: "Logged out." });
+  await auditLog("admin.logout", "auth", null, null, { ip }, ip);
+  res.json({ success: true, message: "لاگ آؤٹ ہو گئے۔" });
 });
 
-router.get("/admin/me", async (req, res) => {
-  const session = req.cookies?.[ADMIN_SESSION_COOKIE];
-  res.json({ authenticated: session === "authenticated" });
+// ─── GET /admin/me ────────────────────────────────────────────────────────────
+router.get("/admin/me", (req, res) => {
+  const token = req.cookies?.[ADMIN_SESSION_COOKIE];
+  res.json({ authenticated: !!token && verifySessionToken(token) });
 });
 
 export default router;

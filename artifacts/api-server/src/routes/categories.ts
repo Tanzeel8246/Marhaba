@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { categoriesTable, insertCategorySchema } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { requireAdmin } from "../middlewares/requireAdmin";
 
 const router = Router();
 
@@ -13,7 +14,7 @@ router.get("/categories", async (req, res) => {
   res.json(categories);
 });
 
-router.post("/categories", async (req, res) => {
+router.post("/categories", requireAdmin, async (req, res) => {
   const parsed = insertCategorySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
@@ -39,7 +40,7 @@ router.get("/categories/:id", async (req, res) => {
   res.json(category);
 });
 
-router.put("/categories/:id", async (req, res) => {
+router.put("/categories/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const parsed = insertCategorySchema.safeParse(req.body);
   if (!parsed.success) {
@@ -58,7 +59,7 @@ router.put("/categories/:id", async (req, res) => {
   res.json(category);
 });
 
-router.delete("/categories/:id", async (req, res) => {
+router.delete("/categories/:id", requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(categoriesTable).where(eq(categoriesTable.id, id));
   res.status(204).send();
