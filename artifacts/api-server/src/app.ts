@@ -12,7 +12,10 @@ app.use(helmet({
   contentSecurityPolicy: false, // Disable CSP if it interferes with certain frontend features, or configure it properly
 }));
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : true;
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(",") 
+  : ["https://marhaba-five-kappa.vercel.app", "http://localhost:3000", "capacitor://localhost", "http://localhost"];
+
 
 app.use(
   pinoHttp({

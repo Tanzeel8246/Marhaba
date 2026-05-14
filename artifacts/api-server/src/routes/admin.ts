@@ -104,9 +104,9 @@ router.post("/admin/login", async (req, res) => {
 
   res.cookie(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 8 * 60 * 60 * 1000, // 8 گھنٹے (بزنس hours)
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: true,
+    maxAge: 8 * 60 * 60 * 1000,
   });
 
   await auditLog("admin.login.success", "auth", null, null, { ip }, ip);
