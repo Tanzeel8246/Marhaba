@@ -86,6 +86,11 @@ router.post("/admin/login", async (req, res) => {
 
   const inputPassword = parsed.data.password.trim();
   const expectedPassword = ADMIN_PASSWORD.trim();
+  
+  // Debug logs for Render logs (Password is NOT printed for security)
+  console.log(`[Login Debug] Input length: ${inputPassword.length}, Expected length: ${expectedPassword.length}`);
+  console.log(`[Login Debug] Using default password? ${ADMIN_PASSWORD === "admin123"}`);
+  
   const match = inputPassword === expectedPassword;
 
   if (!match) {
