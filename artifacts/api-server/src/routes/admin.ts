@@ -84,12 +84,9 @@ router.post("/admin/login", async (req, res) => {
     return;
   }
 
-  // Constant-time password comparison
-  const inputBuf    = Buffer.from(parsed.data.password);
-  const expectedBuf = Buffer.from(ADMIN_PASSWORD);
-  const match =
-    inputBuf.length === expectedBuf.length &&
-    timingSafeEqual(inputBuf, expectedBuf);
+  const inputPassword = parsed.data.password.trim();
+  const expectedPassword = ADMIN_PASSWORD.trim();
+  const match = inputPassword === expectedPassword;
 
   if (!match) {
     recordFailedAttempt(ip);
