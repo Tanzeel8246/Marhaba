@@ -86,12 +86,14 @@ router.post("/admin/login", async (req, res) => {
 
   const inputPassword = parsed.data.password.trim();
   const expectedPassword = ADMIN_PASSWORD.trim();
-  
-  // Debug logs for Render logs (Password is NOT printed for security)
-  console.log(`[Login Debug] Input length: ${inputPassword.length}, Expected length: ${expectedPassword.length}`);
-  console.log(`[Login Debug] Using default password? ${ADMIN_PASSWORD === "admin123"}`);
-  
   const match = inputPassword === expectedPassword;
+
+  // Extra Debug logs
+  console.log(`[Login Debug] IP: ${ip}`);
+  console.log(`[Login Debug] Input: ${inputPassword.length} chars, Expected: ${expectedPassword.length} chars`);
+  console.log(`[Login Debug] Match Result: ${match}`);
+  console.log(`[Login Debug] Expected password starts with: ${expectedPassword.substring(0, 1)}...`);
+
 
   if (!match) {
     recordFailedAttempt(ip);
